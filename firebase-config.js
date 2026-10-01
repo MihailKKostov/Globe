@@ -1,12 +1,10 @@
-// Shared globes (Google sign-in + syncing with friends) need a free Firebase project.
-// Follow "Shared globes" in README.md, then replace `null` below with your web app's config, e.g.
-//
-// window.FIREBASE_CONFIG = {
-//   apiKey: "AIza...",
-//   authDomain: "your-project.firebaseapp.com",
-//   projectId: "your-project",
-//   appId: "1:1234567890:web:abc123"
-// };
-//
+// Firebase project for shared globes and accounts (see "Shared globes" in README.md).
 // This config is not a secret; access is protected by the rules in firestore.rules.
-window.FIREBASE_CONFIG = null;
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBMjSeejsYpczTacomlWqQjBqDsBUYmrW0",
+  authDomain: "scratch-together.firebaseapp.com",
+  projectId: "scratch-together",
+  storageBucket: "scratch-together.firebasestorage.app",
+  messagingSenderId: "229078470763",
+  appId: "1:229078470763:web:6cf7b6776d3b9ffc9ae12e"
+};
