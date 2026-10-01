@@ -679,9 +679,12 @@ function targetView() {
 
 // when zoomed in, the view slides so the subject is centred; at normal zoom the globe sits on its stand
 const panFactor = () => clamp((cam.zoom - 1) / .8, 0, 1);
+// how far the zoomed globe may slide off-centre: never so far that empty space opens up beside it
+const panLimit = R => Math.max(0, R - view.r * .9);
 function setProj() {
-  const R = view.r * cam.zoom, f = panFactor();
-  proj.rotate([cam.lam, VIEW_PHI, AXIS_TILT]).scale(R).translate([view.cx + cam.pan[0] * R * f, view.cy + cam.pan[1] * R * f]);
+  const R = view.r * cam.zoom, f = panFactor(), lim = panLimit(R);
+  proj.rotate([cam.lam, VIEW_PHI, AXIS_TILT]).scale(R)
+    .translate([view.cx + clamp(cam.pan[0] * R * f, -lim, lim), view.cy + clamp(cam.pan[1] * R * f, -lim, lim)]);
   return R;
 }
 // pan (in globe radii) that brings a point to the middle of the view at a given spin
@@ -843,33 +846,26 @@ function pick(x, y) {
 gc.addEventListener('pointerdown', e => {
   try { gc.setPointerCapture(e.pointerId); } catch {}
   ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
-  drag = {moved:0, t:performance.now(), v:0, ax:0, ay:0, axis:null};
+  drag = {moved:0, t:performance.now(), v:0};
   if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
   if (!J.active) { cam.target = null; cam.vel = 0; autoRotate = false; }
 });
 gc.addEventListener('pointermove', e => {
   const p = ptrs.get(e.pointerId);
   if (p) {
-    let dx = e.clientX - p.x, dy = e.clientY - p.y;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
     p.x = e.clientX; p.y = e.clientY;
     if (J.active || !drag) return;
     if (ptrs.size === 2) {
       const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (pinchD) setZoom(cam.zoom * d / pinchD);
+      if (pinchD) setZoom(cam.zoom * d / pinchD, (a.x + b.x) / 2, (a.y + b.y) / 2);
       pinchD = d; drag.moved = 99;
     } else {
       drag.moved += Math.abs(dx) + Math.abs(dy);
-      // each swipe does one thing: whichever way it starts (sideways = spin, up/down = slide the zoomed view) wins
-      if (!drag.axis) {
-        drag.ax += dx; drag.ay += dy;
-        if (Math.hypot(drag.ax, drag.ay) < 8) return;
-        drag.axis = Math.abs(drag.ax) >= Math.abs(drag.ay) * .8 || panFactor() === 0 ? 'x' : 'y';
-        dx = drag.axis === 'x' ? drag.ax : 0; dy = drag.axis === 'y' ? drag.ay : 0;
-      }
+      // swiping only ever turns the globe on its axis; to look north or south, zoom in on that spot
       const R = view.r * cam.zoom, now = performance.now();
-      let dl = 0;
-      if (drag.axis === 'x') { dl = dx * 57.3 / R; cam.lam += dl; }   // sideways drag turns the globe on its axis
-      else { const f = panFactor(); if (f > 0) cam.pan[1] = clamp(cam.pan[1] + dy / (R * Math.max(f, .25)), -1.1, 1.1); }
+      const dl = dx * 57.3 / R;
+      cam.lam += dl;
       const dtm = Math.max(1, now - drag.t); drag.v = drag.v * .5 + (dl / dtm) * .5; drag.t = now;
       gc.classList.add('drag');
     }
@@ -889,15 +885,30 @@ const endPtr = e => {
   if (ptrs.size === 0) drag = null;
 };
 gc.addEventListener('pointerup', endPtr); gc.addEventListener('pointercancel', endPtr);
-function setZoom(z) {
-  const old = cam.zoom; cam.zoom = clamp(z, .7, 8);
-  if (cam.zoom < old && cam.zoom < 1.4) { cam.pan[0] *= .85; cam.pan[1] *= .85; }
+// zoom towards a point on screen (between the fingers, or under the mouse): that spot stays put
+function setZoom(z, ax, ay) {
+  let ll = null;
+  if (ax != null) {
+    setProj();
+    const [tx, ty] = proj.translate();
+    if (Math.hypot(ax - tx, ay - ty) < view.r * cam.zoom * .98) ll = proj.invert([ax, ay]);
+  }
+  cam.zoom = clamp(z, .7, 8);
+  const R = view.r * cam.zoom, f = panFactor();
+  if (f > .001) {
+    if (ll && isFinite(ll[0])) {
+      const u = unit.rotate([cam.lam, VIEW_PHI, AXIS_TILT])(ll);
+      cam.pan = [(ax - view.cx - R * u[0]) / (R * f), (ay - view.cy - R * u[1]) / (R * f)];
+    }
+    const lim = panLimit(R) / (R * f);   // keep the stored offset within what can be shown, so it never lags
+    cam.pan = cam.pan.map(v => clamp(v, -lim, lim));
+  }
   invalidate();
 }
 gc.addEventListener('wheel', e => {
   e.preventDefault(); if (J.active) return;
   cam.target = null; autoRotate = false;
-  setZoom(cam.zoom * Math.exp(-e.deltaY * .0012));
+  setZoom(cam.zoom * Math.exp(-e.deltaY * .0012), e.clientX, e.clientY);
 }, {passive:false});
 gc.addEventListener('pointerleave', () => { hoverPending = null; if (hover) { hover = null; invalidate(); } $('#tip').style.opacity = 0; });
 
@@ -1962,7 +1973,7 @@ addEventListener('keydown', e => {
   if (CFG && (ls.get('sg-auth') || ls.get('sg-join'))) startCloud();
   if (ls.get('sg-join')) setMode('people');
   cam.zoom = .8; cam.target = {lam:cam.lam, zoom:1, pan:[0, 0]};
-  window.app = {get state() { return state; }, get cloud() { return cloud; }, get cam() { return cam; }, importData, exportData, startJourney, selectCountry, setMode};
+  window.app = {get state() { return state; }, get cloud() { return cloud; }, get cam() { return cam; }, screenOf:ll => { setProj(); return proj(ll); }, llAt:(x, y) => { setProj(); return proj.invert([x, y]); }, offset:() => { setProj(); return [proj.translate()[0] - view.cx, proj.translate()[1] - view.cy, view.r * cam.zoom, view.r]; }, importData, exportData, startJourney, selectCountry, setMode};
 })();
 })();
 </script>
