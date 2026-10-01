@@ -45,9 +45,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:16px;padding:12px 20px;z-index:10;pointer-events:none}
 header>*{pointer-events:auto}
 .brand{display:flex;flex-direction:column;line-height:1}
-.brand b{font-family:var(--title);font-weight:400;font-size:30px;letter-spacing:.5px;color:var(--ink)}
+.brand b{font-family:var(--title);font-weight:400;font-size:30px;letter-spacing:.5px;color:var(--ink);white-space:nowrap}
 .brand small{font-family:var(--serif);font-style:italic;color:var(--ink2);font-size:15px;margin-top:3px}
-.stats{color:var(--ink2);font-size:15px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;font-style:italic}
+.stats{color:var(--ink2);font-size:15px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;font-style:italic;min-width:0}
 .stats b{color:var(--ink);font-style:normal;font-family:var(--serif);font-size:18px;font-weight:400}
 .stats .sep{opacity:.5}
 .spacer{flex:1}
@@ -175,12 +175,42 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
 #loading{position:fixed;inset:0;display:grid;place-items:center;z-index:180;background:#e6d3ab;font-family:var(--serif);font-style:italic;font-size:22px;color:var(--ink2);transition:opacity .6s}
 #loading.done{opacity:0;pointer-events:none}
 
+/* friends & shared globes */
+#acctBtn{display:inline-flex;align-items:center;height:36px;padding:2px 12px 2px 3px;border-radius:18px;background:var(--paper);border:1px solid var(--ink2);font-family:var(--serif);color:var(--ink);gap:0}
+#acctBtn:hover{background:var(--paper2)}
+#acctBtn .avw+.avw{margin-left:-9px}
+#acctBtn .lbl{margin-left:8px;white-space:nowrap}
+#acctBtn svg{margin:0 2px 0 5px}
+.avw{position:relative;display:inline-block;flex:none;line-height:0}
+.av{width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--paper);display:inline-grid;place-items:center;color:#fbf4e2;font-family:var(--serif);font-size:15px;line-height:1;background:#8a7155}
+.avw .online{position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:#4a8a3c;border:2px solid var(--paper)}
+.people .av{width:42px;height:42px;font-size:19px}
+.people .row{cursor:default}
+.people .row .x{margin-left:auto}
+.people h5,.globes h5{margin:14px 0 6px;font-family:var(--serif);font-weight:400;font-size:19px}
+.me-row{display:flex;align-items:center;gap:10px}
+.me-row .nm{flex:1;min-width:0}
+.me-row small{display:block;color:var(--ink2);font-style:italic;overflow:hidden;text-overflow:ellipsis}
+.globes .row{cursor:pointer}
+.globes .row.on{background:rgba(142,43,47,.08)}
+.globes .row.on b::after{content:"  ✓";color:var(--wax)}
+.invite{display:flex;gap:6px;align-items:center}
+.invite input{flex:1;font-size:14px}
+.hero{text-align:center;padding:18px 6px;line-height:1.55}
+.hero p{margin:0 0 14px}
+.gbtn{display:inline-flex;gap:10px;align-items:center;font-size:17px;padding:9px 18px}
+.gbtn b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#fbf4e2;color:var(--wax);font-family:Georgia,serif;font-weight:700;font-size:15px}
+.copyform{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin:8px 0}
+.copyform span{font-style:italic;color:var(--ink2)}
+
 @media (max-width:800px){
   header{padding:10px 12px;flex-wrap:wrap;gap:2px 10px}
-  .brand b{font-size:23px}.brand small{display:none}
+  header{gap:2px 7px}
+  .brand b{font-size:20px}.brand small{display:none}
   header .long{display:none}
+  #acctBtn{padding-right:3px}
   header .btn.primary{padding:5px 12px}
-  .stats{width:100%;order:3;font-size:14px}.stats b{font-size:16px}
+  .stats{flex:0 0 100%;order:3;font-size:14px}.stats b{font-size:16px}
   nav{position:fixed;bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:12;width:calc(100% - 20px);justify-content:space-around}
   nav button{padding:7px 4px;flex:1;font-size:15px}
   #panel{top:auto;left:8px;right:8px;width:auto;height:54vh;bottom:64px;transform:translateY(130%)}
@@ -205,6 +235,7 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
   <div class="stats" id="stats"></div>
   <div class="spacer"></div>
   <button class="btn primary" id="addBtn">+ Add<span class="long"> a visit</span></button>
+  <button id="acctBtn" title="Friends &amp; shared globes"></button>
   <nav id="nav">
     <button data-nav="globe" class="on">Globe</button>
     <button data-nav="list">Countries</button>
@@ -262,17 +293,18 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
 <dialog id="setDlg">
   <form method="dialog">
     <h2>Settings</h2>
-    <div class="two">
+    <div class="two" id="namesBlock">
       <label>Your name<input type="text" id="nameA" maxlength="20"></label>
       <label>Your partner's name<input type="text" id="nameB" maxlength="20"></label>
     </div>
+    <div class="sub" id="sharedNote" hidden></div>
     <div class="rule"></div>
     <label class="toggle"><input type="checkbox" id="pinShow"> Put a pin on every scratched-off country</label>
     <div><div class="sub" style="margin-bottom:6px">Pin style</div><div class="pins" id="gPins" data-scope="global"></div></div>
     <div><div class="sub">Pin colour</div><div class="sw" id="gColors" data-scope="global"></div></div>
     <div class="sub">You can give any single country its own pin from that country's page.</div>
     <div class="rule"></div>
-    <div class="sub">Everything is kept in this browser on this device. Export a backup now and then; it includes your photographs.</div>
+    <div class="sub">Your private globe is kept in this browser on this device. Export a backup now and then; it includes your photographs.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button type="button" class="btn" id="expBtn">Export backup</button>
       <button type="button" class="btn" id="impBtn">Import backup</button>
@@ -286,6 +318,7 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
 <div id="lightbox"><button class="icon x" id="lbX">✕</button><button class="icon nav prev" id="lbP">‹</button><img id="lbImg" alt=""><button class="icon nav next" id="lbN">›</button></div>
 <div id="toast"></div>
 
+<script src="firebase-config.js"></script>
 <script src="vendor/d3.min.js"></script>
 <script src="vendor/topojson-client.min.js"></script>
 <script>
@@ -298,7 +331,9 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const wrap180 = d => ((d % 360) + 540) % 360 - 180;
 const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
 const TOTAL_COUNTRIES = 195;
-const COLORS = {both:'#a8323a', a:'#2f6f73', b:'#c08a2e'};
+const TOGETHER = '#a8323a';                       // countries visited by two or more people
+const LOCAL_COLORS = {a:'#2f6f73', b:'#c08a2e'};
+const PALETTE = ['#2f6f73', '#c08a2e', '#28466e', '#2f5d3a', '#6d3b6b', '#a0522d', '#b0576f', '#7a6a2e', '#3e7f9a', '#5b4a8a'];
 const INK = '#2e1f10';
 // like a desk globe: fixed viewing angle, axis leaning 23.5°, spins only around that axis
 const VIEW_PHI = -14, AXIS_TILT = 23.5;
@@ -308,10 +343,19 @@ const PIN_COLORS = ['auto', '#8e2b2f', '#2b2118', '#b08d3c', '#2f5d3a', '#28466e
 
 /* ───────────── state & storage ───────────── */
 const defaults = () => ({names:{a:'Me', b:'Partner'}, trips:[], pins:{show:true, style:'pin', color:'auto'}, countries:{}});
-let state = defaults();
+let localState = defaults();  // the private globe, kept in IndexedDB on this device
+let state = localState;       // whichever globe is showing: private, or a shared one from the cloud
 let db = null;
-const thumbURL = {};          // photo id -> object URL (thumbnail)
+const localThumbs = {};       // photo id -> object URL (thumbnail), private globe
+let cloudThumbs = {};         // photo id -> data URL (thumbnail), shared globe
 const memPhotos = {};         // fallback if IndexedDB is unavailable
+const cloud = {fb:null, started:false, user:null, globes:{}, gid:null, globe:null, members:[], unsub:[]};
+const thumbOf = id => (cloud.gid ? cloudThumbs : localThumbs)[id] || '';
+const ls = {
+  get:k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set:(k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del:k => { try { localStorage.removeItem(k); } catch {} },
+};
 
 function idb(store, mode, fn) {
   return new Promise((res, rej) => {
@@ -335,29 +379,29 @@ function normalize(s) {
   const d = defaults();
   return {names:{...d.names, ...(s.names || {})}, trips:s.trips || [], pins:{...d.pins, ...(s.pins || {})}, countries:s.countries || {}};
 }
-const saveState = () => db ? idb('kv', 'readwrite', s => s.put(state, 'state')).catch(console.error) : null;
+const saveState = () => db ? idb('kv', 'readwrite', s => s.put(localState, 'state')).catch(console.error) : null;
 async function putPhoto(id, data) {
-  thumbURL[id] = URL.createObjectURL(data.thumb);
+  localThumbs[id] = URL.createObjectURL(data.thumb);
   if (db) await idb('photos', 'readwrite', s => s.put(data, id)); else memPhotos[id] = data;
 }
 async function delPhoto(id) {
-  if (thumbURL[id]) { URL.revokeObjectURL(thumbURL[id]); delete thumbURL[id]; }
+  if (localThumbs[id]) { URL.revokeObjectURL(localThumbs[id]); delete localThumbs[id]; }
   delete memPhotos[id];
   if (db) await idb('photos', 'readwrite', s => s.delete(id));
 }
 async function getFullPhoto(id) {
   const d = db ? await idb('photos', 'readonly', s => s.get(id)) : memPhotos[id];
-  return d ? URL.createObjectURL(d.full) : thumbURL[id];
+  return d ? URL.createObjectURL(d.full) : localThumbs[id];
 }
 async function loadAll() {
   await openDB();
   if (!db) return;
   const s = await idb('kv', 'readonly', s => s.get('state'));
-  if (s) state = normalize(s);
+  if (s) localState = state = normalize(s);
   const keys = await idb('photos', 'readonly', s => s.getAllKeys());
   for (const k of keys) {
     const d = await idb('photos', 'readonly', s => s.get(k));
-    if (d) thumbURL[k] = URL.createObjectURL(d.thumb);
+    if (d) localThumbs[k] = URL.createObjectURL(d.thumb);
   }
 }
 
@@ -377,16 +421,48 @@ async function processImage(file) {
   return out;
 }
 
-/* ───────────── helpers on trips ───────────── */
+/* the same operations for either globe: private (IndexedDB) or shared (cloud) */
+async function savePhoto(data) {
+  const id = uid();
+  if (cloud.gid) await cloudPutPhoto(id, data); else await putPhoto(id, data);
+  return id;
+}
+const removePhoto = id => cloud.gid ? cloudDelPhoto(id) : delPhoto(id);
+const fullPhoto = id => cloud.gid ? cloudFullPhoto(id) : getFullPhoto(id);
+async function putTrip(t) {
+  if (cloud.gid) return cloudPutTrip(t);
+  const i = state.trips.findIndex(x => x.id === t.id);
+  if (i >= 0) state.trips[i] = t; else state.trips.push(t);
+  await saveState();
+}
+async function removeTrip(id) {
+  if (cloud.gid) return cloudDelTrip(id);
+  state.trips = state.trips.filter(x => x.id !== id);
+  await saveState();
+}
+const savePins = () => cloud.gid ? cloudSaveGlobe({pins:state.pins}) : saveState();
+const saveCountry = name => cloud.gid ? cloudSaveCountry(name) : saveState();
+
+/* ───────────── people & trips ───────────── */
+let people = [];
+function computePeople() {
+  people = cloud.gid
+    ? cloud.members.map(m => ({id:m.id, name:m.name || 'Traveller', color:m.color || '#8a7155', photo:m.photo || '', lastActive:m.lastActive, me:!!cloud.user && m.id === cloud.user.uid}))
+    : [{id:'a', name:state.names.a, color:LOCAL_COLORS.a, me:true}, {id:'b', name:state.names.b, color:LOCAL_COLORS.b}];
+}
+const person = id => people.find(p => p.id === id);
+const whoIds = t => Array.isArray(t.who) ? t.who : t.who === 'both' ? ['a', 'b'] : [t.who];
+const keyOfIds = ids => ids.length > 1 ? 'together' : ids[0];
+const tripKey = t => keyOfIds(whoIds(t));
+const colorOf = k => k === 'together' ? TOGETHER : (person(k) || {}).color || '#8a7155';
+const nameOf = id => (person(id) || {}).name || 'A former traveller';
+function namesOf(ids) { const n = ids.map(nameOf); return n.length < 2 ? (n[0] || '') : n.slice(0, -1).join(', ') + ' & ' + n[n.length - 1]; }
+function countryWho(trips) { const s = new Set(); for (const t of trips) for (const i of whoIds(t)) s.add(i); return keyOfIds([...s]); }
+
 const sortedTrips = () => [...state.trips].sort((a, b) => a.start.localeCompare(b.start) || (a.created || 0) - (b.created || 0));
 const tripsOf = name => sortedTrips().filter(t => t.country === name);
-const whoLabel = w => w === 'both' ? 'Together' : state.names[w];
 const fmtDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, {day:'numeric', month:'long', year:'numeric'}); };
 const fmtRange = t => (t.end && t.end !== t.start) ? `${fmtDate(t.start)} – ${fmtDate(t.end)}` : fmtDate(t.start);
-function countryWho(trips) {
-  const s = new Set(trips.map(t => t.who));
-  return (s.has('both') || (s.has('a') && s.has('b'))) ? 'both' : (s.has('a') ? 'a' : 'b');
-}
 let toastT;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
 
@@ -395,7 +471,7 @@ function pinFor(name, who) {
   const o = state.countries[name] || {};
   const style = (o.pin && o.pin !== 'default') ? o.pin : (state.pins.show ? state.pins.style : 'none');
   let color = o.color || state.pins.color;
-  if (color === 'auto') color = COLORS[who];
+  if (color === 'auto') color = colorOf(who);
   return {style, color};
 }
 
@@ -660,7 +736,7 @@ function draw(now) {
   for (const f of feats) {
     const who = sx.get(f.name); if (!who) continue;
     ctx.beginPath(); path(f.geo);
-    ctx.globalAlpha = .85; ctx.fillStyle = COLORS[who]; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.globalAlpha = .85; ctx.fillStyle = colorOf(who); ctx.fill(); ctx.globalAlpha = 1;
     ctx.strokeStyle = 'rgba(40,20,8,.75)'; ctx.lineWidth = .8; ctx.stroke();
   }
 
@@ -848,23 +924,24 @@ $('#nav').addEventListener('click', e => {
   else setMode(n);
 });
 $('#closeBtn').onclick = closePanel;
+$('#acctBtn').onclick = () => { if (J.active) exitJourney(); if (panelOpen && mode === 'people') closePanel(); else setMode('people'); };
 $('#backBtn').onclick = () => { if (prevMode === 'globe') closePanel(); else { mode = prevMode; sel = null; renderPanel(); syncNav(); invalidate(); } };
 
 let listFilter = 'visited', listQuery = '';
-const whoChip = w => `<span class="chip"><i class="dot ${w}"></i>${esc(whoLabel(w))}</span>`;
+const whoChip = t => `<span class="chip"><i class="dot" style="background:${colorOf(tripKey(t))}"></i>${esc(namesOf(whoIds(t)))}</span>`;
 
 function tripCard(t, opts = {}) {
   const photos = t.photos || [];
   const shown = photos.slice(0, 8);
   const thumbs = photos.length ? `<div class="thumbs">${shown.map((id, i) =>
-    `<button data-act="photo" data-id="${t.id}" data-i="${i}"><img src="${thumbURL[id] || ''}" alt="">${(i === 7 && photos.length > 8) ? `<span class="more">+${photos.length - 7}</span>` : ''}</button>`).join('')}</div>` : '';
+    `<button data-act="photo" data-id="${t.id}" data-i="${i}"><img src="${thumbOf(id)}" alt="">${(i === 7 && photos.length > 8) ? `<span class="more">+${photos.length - 7}</span>` : ''}</button>`).join('')}</div>` : '';
   const head = opts.showCountry
     ? `<span class="link" data-act="country" data-c="${esc(t.country)}">${esc(t.country)}</span>${t.place ? ', ' + esc(t.place) : ''}`
     : (esc(t.place) || fmtRange(t));
   const meta = (opts.showCountry || t.place) ? fmtRange(t) + ' ·' : '';
-  return `<div class="card item" style="--c:${COLORS[t.who]}">
+  return `<div class="card item" style="--c:${colorOf(tripKey(t))}">
     <h4>${head}</h4>
-    <div class="meta">${meta} ${whoChip(t.who)}</div>
+    <div class="meta">${meta} ${whoChip(t)}</div>
     ${t.note ? `<p>${esc(t.note)}</p>` : ''}${thumbs}
     <div class="acts"><button class="btn small" data-act="edit" data-id="${t.id}">Edit</button><button class="btn small danger" data-act="del" data-id="${t.id}">Delete</button></div>
   </div>`;
@@ -900,6 +977,8 @@ function renderPanel() {
       <div class="seg"><button data-f="visited" class="${listFilter === 'visited' ? 'on' : ''}">Visited (${n})</button><button data-f="all" class="${listFilter === 'all' ? 'on' : ''}">All countries</button></div>
       <div id="listItems"></div>`;
     renderList();
+  } else if (mode === 'people') {
+    renderPeople(body, title);
   } else {
     title.textContent = 'Timeline';
     const ts = sortedTrips();
@@ -923,7 +1002,7 @@ function renderList() {
   el.innerHTML = names.map(n => {
     const ts = tripsOf(n), last = ts[ts.length - 1];
     const w = ts.length ? countryWho(ts) : '';
-    return `<div class="row" data-act="country" data-c="${esc(n)}"><i class="dot ${w}"></i><div class="nm"><b>${esc(n)}</b><small>${ts.length ? `${ts.length} visit${ts.length > 1 ? 's' : ''} · last ${fmtDate(last.start)}` : 'Uncharted'}</small></div><span class="sub">›</span></div>`;
+    return `<div class="row" data-act="country" data-c="${esc(n)}"><i class="dot" style="${w ? 'background:' + colorOf(w) : ''}"></i><div class="nm"><b>${esc(n)}</b><small>${ts.length ? `${ts.length} visit${ts.length > 1 ? 's' : ''} · last ${fmtDate(last.start)}` : 'Uncharted'}</small></div><span class="sub">›</span></div>`;
   }).join('');
 }
 $('#panelBody').addEventListener('input', e => { if (e.target.id === 'q') { listQuery = e.target.value; renderList(); } });
@@ -936,7 +1015,7 @@ $('#panelBody').addEventListener('click', e => {
     if (pb.dataset.pin) o.pin = pb.dataset.pin;
     else if (pb.dataset.color === 'default') delete o.color; else o.color = pb.dataset.color;
     if ((!o.pin || o.pin === 'default') && !o.color) delete state.countries[sel];
-    saveState(); renderPanel(); invalidate(); return;
+    saveCountry(sel); renderPanel(); invalidate(); return;
   }
   const a = e.target.closest('[data-act]'); if (!a) return;
   const act = a.dataset.act, id = a.dataset.id, c = a.dataset.c;
@@ -945,17 +1024,22 @@ $('#panelBody').addEventListener('click', e => {
   else if (act === 'edit') openTripDlg({id});
   else if (act === 'del') deleteTrip(id);
   else if (act === 'photo') { const t = state.trips.find(t => t.id === id); openLightbox(t.photos, +a.dataset.i); }
+  else peopleAction(act, a);
 });
 
 async function deleteTrip(id) {
   const t = state.trips.find(t => t.id === id);
   if (!t || !confirm(`Delete this visit to ${t.country}?`)) return;
-  for (const p of t.photos || []) await delPhoto(p);
-  state.trips = state.trips.filter(x => x.id !== id);
-  await saveState(); refresh();
+  for (const p of t.photos || []) await removePhoto(p);
+  await removeTrip(id); refresh();
 }
 function refresh() {
-  updateStats(); updateLegend(); if (panelOpen) renderPanel();
+  computePeople(); updateStats(); updateLegend(); updateAcct();
+  if (panelOpen) {
+    const ae = document.activeElement;   // don't yank the keyboard away while someone is typing
+    if (ae && ae.id === 'q') renderList();
+    else if (!(ae && $('#panel').contains(ae) && /INPUT|SELECT|TEXTAREA/.test(ae.tagName))) renderPanel();
+  }
   $('#hint').classList.toggle('hide', state.trips.length > 0 || J.active);
   invalidate();
 }
@@ -965,7 +1049,8 @@ function updateStats() {
   $('#stats').innerHTML = `<b>${n}</b> countries<span class="sep">·</span><b>${Math.round(n / TOTAL_COUNTRIES * 100)}%</b> of the world<span class="sep">·</span><b>${state.trips.length}</b> trips<span class="sep">·</span><b>${p}</b> photographs`;
 }
 function updateLegend() {
-  $('#legend').innerHTML = ['both', 'a', 'b'].map(w => `<span><i style="background:${COLORS[w]}"></i>${esc(whoLabel(w))}</span>`).join('') + `<span><i style="background:#efe0bb"></i>Uncharted</span>`;
+  $('#legend').innerHTML = people.slice(0, 6).map(p => `<span><i style="background:${p.color}"></i>${esc(p.name)}</span>`).join('') +
+    `<span><i style="background:${TOGETHER}"></i>Together</span><span><i style="background:#efe0bb"></i>Uncharted</span>`;
 }
 
 /* ───────────── add / edit dialog ───────────── */
@@ -973,7 +1058,7 @@ let form = null;
 const tripDlg = $('#tripDlg');
 function openTripDlg({id, country} = {}) {
   const t = id ? state.trips.find(t => t.id === id) : null;
-  form = {id:t ? t.id : null, orig:t ? [...(t.photos || [])] : [], photos:t ? (t.photos || []).map(p => ({id:p, url:thumbURL[p]})) : []};
+  form = {id:t ? t.id : null, orig:t ? [...(t.photos || [])] : [], photos:t ? (t.photos || []).map(p => ({id:p, url:thumbOf(p)})) : []};
   $('#tripDlgTitle').textContent = t ? 'Edit visit' : 'Add a visit';
   const cur = t ? t.country : (country || sel || '');
   $('#fCountry').innerHTML = `<option value="" disabled ${cur ? '' : 'selected'}>Choose a country…</option>` + featsHi.map(f => `<option ${f.name === cur ? 'selected' : ''}>${esc(f.name)}</option>`).join('');
@@ -981,8 +1066,9 @@ function openTripDlg({id, country} = {}) {
   $('#fStart').value = t ? t.start : new Date().toISOString().slice(0, 10);
   $('#fEnd').value = t ? t.end || '' : '';
   $('#fNote').value = t ? t.note || '' : '';
-  const who = t ? t.who : 'both';
-  $('#fWho').innerHTML = ['both', 'a', 'b'].map(w => `<label><input type="radio" name="who" value="${w}" ${w === who ? 'checked' : ''}>${esc(whoLabel(w))}</label>`).join('');
+  const chosen = new Set(t ? whoIds(t) : (cloud.gid ? [cloud.user.uid] : ['a', 'b']));
+  const ids = [...new Set([...people.map(p => p.id), ...chosen])];
+  $('#fWho').innerHTML = ids.map(i => `<label><input type="checkbox" name="who" value="${esc(i)}" ${chosen.has(i) ? 'checked' : ''}><i class="dot" style="background:${colorOf(i)}"></i>${esc(nameOf(i))}${cloud.gid && person(i) && person(i).me ? ' (you)' : ''}</label>`).join('');
   renderPThumbs();
   tripDlg.showModal();
 }
@@ -1016,16 +1102,17 @@ $('#tripForm').addEventListener('submit', async e => {
   const country = $('#fCountry').value, start = $('#fStart').value, end = $('#fEnd').value;
   if (!country || !start) return;
   if (end && end < start) { toast('The “To” date is before the “From” date'); return; }
+  const who = [...document.querySelectorAll('input[name=who]:checked')].map(i => i.value);
+  if (!who.length) { toast('Tick at least one traveller'); return; }
   const ids = [];
   for (const p of form.photos) {
-    if (p.isNew) { const id = uid(); await putPhoto(id, p.data); URL.revokeObjectURL(p.url); ids.push(id); }
+    if (p.isNew) { ids.push(await savePhoto(p.data)); URL.revokeObjectURL(p.url); }
     else ids.push(p.id);
   }
-  for (const o of form.orig) if (!ids.includes(o)) await delPhoto(o);
-  const rec = {country, place:$('#fPlace').value.trim(), start, end, who:document.querySelector('input[name=who]:checked').value, note:$('#fNote').value.trim(), photos:ids};
-  if (form.id) Object.assign(state.trips.find(t => t.id === form.id), rec);
-  else state.trips.push({id:uid(), created:Date.now(), ...rec});
-  await saveState();
+  for (const o of form.orig) if (!ids.includes(o)) await removePhoto(o);
+  const rec = {country, place:$('#fPlace').value.trim(), start, end, who, note:$('#fNote').value.trim(), photos:ids};
+  const base = form.id ? state.trips.find(t => t.id === form.id) : {id:uid(), created:Date.now(), ...(cloud.gid ? {by:cloud.user.uid} : {})};
+  await putTrip({...base, ...rec});
   tripDlg.close();
   refresh();
   toast(form.id ? 'Visit updated' : `${country}, scratched off!`);
@@ -1038,8 +1125,8 @@ let lb = {ids:[], i:0};
 function openLightbox(ids, i) { lb = {ids, i}; showLb(); $('#lightbox').classList.add('on'); }
 async function showLb() {
   const id = lb.ids[lb.i];
-  $('#lbImg').src = thumbURL[id] || '';
-  $('#lbImg').src = await getFullPhoto(id);
+  $('#lbImg').src = thumbOf(id);
+  $('#lbImg').src = await fullPhoto(id);
   $('#lbP').style.display = $('#lbN').style.display = lb.ids.length > 1 ? '' : 'none';
 }
 const lbStep = d => { lb.i = (lb.i + d + lb.ids.length) % lb.ids.length; showLb(); };
@@ -1051,41 +1138,51 @@ $('#lbImg').onclick = e => e.stopPropagation();
 /* ───────────── settings / pins / backup ───────────── */
 const setDlg = $('#setDlg');
 function renderPinSettings() {
-  const sample = state.pins.color === 'auto' ? COLORS.both : state.pins.color;
+  const sample = state.pins.color === 'auto' ? TOGETHER : state.pins.color;
   $('#gPins').innerHTML = pinButtons(state.pins.style, false, sample);
   $('#gColors').innerHTML = colorButtons(state.pins.color, false);
   $('#pinShow').checked = state.pins.show;
   paintPreviews(setDlg);
 }
-$('#setBtn').onclick = () => { $('#nameA').value = state.names.a; $('#nameB').value = state.names.b; renderPinSettings(); setDlg.showModal(); };
+$('#setBtn').onclick = () => {
+  $('#nameA').value = localState.names.a; $('#nameB').value = localState.names.b;
+  $('#namesBlock').hidden = !!cloud.gid;
+  $('#sharedNote').hidden = !cloud.gid;
+  if (cloud.gid) $('#sharedNote').textContent = `You're on the shared globe “${cloud.globes[cloud.gid] || 'Shared globe'}”. Pin settings below apply to everyone on it; names come from each person's Google account.`;
+  renderPinSettings(); setDlg.showModal();
+};
 setDlg.addEventListener('click', e => {
   const b = e.target.closest('[data-pin],[data-color]');
   if (!b || b.parentElement.dataset.scope !== 'global') return;
   if (b.dataset.pin) { state.pins.style = b.dataset.pin; state.pins.show = true; } else state.pins.color = b.dataset.color;
-  renderPinSettings(); saveState(); invalidate();
+  renderPinSettings(); savePins(); invalidate();
 });
-$('#pinShow').onchange = e => { state.pins.show = e.target.checked; saveState(); invalidate(); };
+$('#pinShow').onchange = e => { state.pins.show = e.target.checked; savePins(); invalidate(); };
 setDlg.addEventListener('close', async () => {
-  state.names.a = $('#nameA').value.trim() || 'Me';
-  state.names.b = $('#nameB').value.trim() || 'Partner';
-  await saveState(); refresh();
+  if (!cloud.gid) {
+    localState.names.a = $('#nameA').value.trim() || 'Me';
+    localState.names.b = $('#nameB').value.trim() || 'Partner';
+    await saveState();
+  }
+  refresh();
 });
 const blobToData = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
 async function exportData() {
   const photos = {};
-  for (const t of state.trips) for (const id of t.photos || []) {
+  for (const t of localState.trips) for (const id of t.photos || []) {
     const d = db ? await idb('photos', 'readonly', s => s.get(id)) : memPhotos[id];
     if (d) photos[id] = {full:await blobToData(d.full), thumb:await blobToData(d.thumb)};
   }
-  return {app:'scratch-globe', version:2, ...state, photos};
+  return {app:'scratch-globe', version:2, ...localState, photos};
 }
 async function importData(data) {
   if (!data || !Array.isArray(data.trips)) throw new Error('Not a Scratch Globe backup');
-  for (const id of Object.keys(thumbURL)) await delPhoto(id);
+  for (const id of Object.keys(localThumbs)) await delPhoto(id);
   for (const [id, p] of Object.entries(data.photos || {})) {
     await putPhoto(id, {full:await (await fetch(p.full)).blob(), thumb:await (await fetch(p.thumb)).blob()});
   }
-  state = normalize(data);
+  localState = normalize(data);
+  if (!cloud.gid) state = localState;
   await saveState(); refresh();
 }
 $('#expBtn').onclick = async () => {
@@ -1101,8 +1198,337 @@ $('#impFile').onchange = async e => {
 };
 $('#wipeBtn').onclick = async () => {
   if (!confirm('Erase all trips and photographs? This cannot be undone.')) return;
-  await importData({trips:[], names:state.names, pins:state.pins, photos:{}}); toast('Erased');
+  await importData({trips:[], names:localState.names, pins:localState.pins, photos:{}}); toast('Erased');
 };
+
+
+/* ───────────── shared globes: Google sign-in + Firestore ───────────── */
+const CFG = window.FIREBASE_CONFIG || null;
+const FB_VER = '12.19.0';
+const ONLINE_MS = 150000;     // seen within 2½ minutes = exploring the globe right now
+const msOf = t => !t ? 0 : typeof t.toMillis === 'function' ? t.toMillis() : +t;
+const isOnline = p => Date.now() - msOf(p.lastActive) < ONLINE_MS;
+let refreshT = null;
+const scheduleRefresh = () => { clearTimeout(refreshT); refreshT = setTimeout(refresh, 40); };
+const cloudErr = e => { console.error(e); toast('Could not save to the shared globe: ' + (e.code || e.message)); };
+const cdoc = (...path) => cloud.fb.fs.doc(cloud.fb.fdb, 'globes', cloud.gid, ...path);
+
+async function fbInit() {
+  if (cloud.fb) return cloud.fb;
+  const base = `https://www.gstatic.com/firebasejs/${FB_VER}/`;
+  const [app, auth, fs] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
+  const fa = app.initializeApp(CFG);
+  let fdb;   // keep a local copy so the shared globe still opens offline
+  try { fdb = fs.initializeFirestore(fa, {localCache:fs.persistentLocalCache({tabManager:fs.persistentMultipleTabManager()})}); }
+  catch { fdb = fs.getFirestore(fa); }
+  const au = auth.getAuth(fa);
+  if (CFG.emulators) { auth.connectAuthEmulator(au, 'http://127.0.0.1:9099', {disableWarnings:true}); fs.connectFirestoreEmulator(fdb, '127.0.0.1', 8080); }
+  return cloud.fb = {auth, fs, fdb, au};
+}
+async function startCloud() {
+  if (!CFG || cloud.started) return;
+  cloud.started = true;
+  try { await fbInit(); }
+  catch (e) { console.error(e); cloud.started = false; toast('Could not reach the sharing service'); return; }
+  const {auth, au} = cloud.fb;
+  auth.onAuthStateChanged(au, async u => {
+    cloud.user = u;
+    if (u) {
+      ls.set('sg-auth', '1');
+      await loadMyGlobes();
+      const pending = ls.get('sg-join');
+      if (pending) { ls.del('sg-join'); await joinGlobe(pending); }
+      else { const g = ls.get('sg-active'); if (g && cloud.globes[g] && cloud.gid !== g) openGlobe(g); }
+    } else {
+      ls.del('sg-auth'); cloud.globes = {};
+      if (cloud.gid) useLocal(false);
+    }
+    scheduleRefresh();
+  });
+}
+async function signIn() {
+  if (!CFG) return;
+  await startCloud();
+  if (!cloud.fb) return;
+  const {auth, au} = cloud.fb;
+  const provider = new auth.GoogleAuthProvider();
+  provider.setCustomParameters({prompt:'select_account'});
+  try { await auth.signInWithPopup(au, provider); }
+  catch (e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') await auth.signInWithRedirect(au, provider);
+    else if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') toast('Sign-in failed: ' + (e.code || e.message));
+  }
+}
+const signOutCloud = () => cloud.fb && cloud.fb.auth.signOut(cloud.fb.au);
+
+async function loadMyGlobes() {
+  const {fs, fdb} = cloud.fb;
+  try { const d = await fs.getDoc(fs.doc(fdb, 'users', cloud.user.uid)); cloud.globes = (d.exists() && d.data().globes) || {}; }
+  catch (e) { console.error(e); cloud.globes = {}; }
+}
+function rememberGlobe(gid, name) {
+  const {fs, fdb} = cloud.fb;
+  cloud.globes[gid] = name;
+  fs.setDoc(fs.doc(fdb, 'users', cloud.user.uid), {globes:{[gid]:name}}, {merge:true}).catch(console.error);
+}
+function forgetGlobe(gid) {
+  const {fs, fdb} = cloud.fb;
+  delete cloud.globes[gid];
+  fs.updateDoc(fs.doc(fdb, 'users', cloud.user.uid), new fs.FieldPath('globes', gid), fs.deleteField()).catch(console.error);
+}
+async function createGlobe(name) {
+  const {fs, fdb} = cloud.fb, u = cloud.user;
+  const ref = fs.doc(fs.collection(fdb, 'globes'));
+  await fs.setDoc(ref, {name, owner:u.uid, created:fs.serverTimestamp(), pins:defaults().pins, countries:{}});
+  await addMeAsMember(ref.id);
+  rememberGlobe(ref.id, name);
+  openGlobe(ref.id);
+}
+function addMeAsMember(gid) {
+  const {fs, fdb} = cloud.fb, u = cloud.user;
+  return fs.setDoc(fs.doc(fdb, 'globes', gid, 'members', u.uid), {
+    name:u.displayName || (u.email || 'Traveller').split('@')[0], photo:u.photoURL || '',
+    color:PALETTE[0],   // fixMyColour() moves later joiners onto a free colour
+    joined:fs.serverTimestamp(), lastActive:fs.serverTimestamp()});
+}
+async function joinGlobe(gid) {
+  const {fs, fdb} = cloud.fb;
+  try {
+    const g = await fs.getDoc(fs.doc(fdb, 'globes', gid));
+    if (!g.exists()) { toast('That invitation link is not valid any more'); return; }
+    const name = g.data().name || 'Shared globe';
+    const m = await fs.getDoc(fs.doc(fdb, 'globes', gid, 'members', cloud.user.uid));
+    if (!m.exists()) await addMeAsMember(gid);
+    rememberGlobe(gid, name);
+    openGlobe(gid);
+    toast(`Welcome aboard “${name}”`);
+  } catch (e) { console.error(e); toast('Could not join: ' + (e.code || e.message)); }
+}
+function stopListeners() { cloud.unsub.forEach(f => f()); cloud.unsub = []; clearInterval(beatT); }
+function openGlobe(gid) {
+  stopListeners();
+  const {fs, fdb} = cloud.fb;
+  if (J.active) exitJourney();
+  cloud.gid = gid; cloud.globe = {name:cloud.globes[gid]}; cloud.members = []; cloudThumbs = {};
+  state = {names:defaults().names, trips:[], pins:defaults().pins, countries:{}};
+  ls.set('sg-active', gid);
+  const opts = {serverTimestamps:'estimate'};
+  const fail = e => {
+    console.error(e);
+    if (cloud.gid !== gid) return;
+    toast('You no longer have access to that globe');
+    forgetGlobe(gid); useLocal(true);
+  };
+  cloud.unsub.push(
+    fs.onSnapshot(fs.doc(fdb, 'globes', gid), d => {
+      if (!d.exists()) return fail({code:'not-found'});
+      const g = d.data(opts);
+      cloud.globe = g;
+      state.pins = {...defaults().pins, ...(g.pins || {})};
+      state.countries = g.countries || {};
+      if (g.name && cloud.globes[gid] !== g.name) rememberGlobe(gid, g.name);
+      scheduleRefresh();
+    }, fail),
+    fs.onSnapshot(fs.collection(fdb, 'globes', gid, 'members'), q => {
+      cloud.members = q.docs.map(d => ({id:d.id, ...d.data(opts)})).sort((a, b) => msOf(a.joined) - msOf(b.joined));
+      fixMyColour(); scheduleRefresh();
+    }, fail),
+    fs.onSnapshot(fs.collection(fdb, 'globes', gid, 'trips'), q => {
+      state.trips = q.docs.map(d => ({...d.data(), id:d.id})); scheduleRefresh();
+    }, fail),
+    fs.onSnapshot(fs.collection(fdb, 'globes', gid, 'photos'), q => {
+      for (const c of q.docChanges()) { if (c.type === 'removed') delete cloudThumbs[c.doc.id]; else cloudThumbs[c.doc.id] = c.doc.data().thumb; }
+      scheduleRefresh();
+    }, fail));
+  heartbeat();
+  scheduleRefresh();
+}
+function useLocal(forget) {
+  stopListeners();
+  if (J.active) exitJourney();
+  cloud.gid = null; cloud.members = []; cloud.globe = null; cloudThumbs = {};
+  state = localState;
+  if (forget) ls.del('sg-active');
+  scheduleRefresh();
+}
+// presence: a quiet "I'm here" every minute while the app is open and visible
+let beatT = null;
+function heartbeat() {
+  clearInterval(beatT);
+  const beat = () => {
+    if (!cloud.gid || !cloud.user || document.visibilityState !== 'visible') return;
+    const {fs} = cloud.fb;
+    fs.updateDoc(cdoc('members', cloud.user.uid), {lastActive:fs.serverTimestamp()}).catch(() => {});
+  };
+  beat(); beatT = setInterval(beat, 60000);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && cloud.gid) heartbeat(); });
+setInterval(() => { if (cloud.gid) { updateAcct(); if (panelOpen && mode === 'people') renderPanel(); } }, 30000);
+
+const setMyMember = patch => cloud.fb.fs.updateDoc(cdoc('members', cloud.user.uid), patch).catch(cloudErr);
+function fixMyColour() {   // two people who share a colour would be indistinguishable on the map
+  if (!cloud.user) return;
+  const i = cloud.members.findIndex(m => m.id === cloud.user.uid);
+  if (i < 0) return;
+  const me = cloud.members[i];
+  if (me.color && !cloud.members.slice(0, i).some(m => m.color === me.color)) return;
+  const used = cloud.members.filter(m => m.id !== me.id).map(m => m.color);
+  const c = PALETTE.find(c => !used.includes(c)) || PALETTE[i % PALETTE.length];
+  if (c !== me.color) setMyMember({color:c});
+}
+
+// cloud versions of the data operations; writes are not awaited so they queue up offline
+async function shrinkToDataURL(blob, maxChars) {
+  let url = await blobToData(blob);
+  if (url.length <= maxChars) return url;
+  const bmp = await createImageBitmap(blob);
+  let scale = 1, q = .8;
+  while (url.length > maxChars && scale > .1) {
+    scale *= .8;
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(bmp.width * scale)); c.height = Math.max(1, Math.round(bmp.height * scale));
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    url = c.toDataURL('image/jpeg', q); q = Math.max(.6, q - .05);
+  }
+  return url;
+}
+async function cloudPutPhoto(id, data) {
+  const fs = cloud.fb.fs;
+  const thumb = await shrinkToDataURL(data.thumb, 90000), full = await shrinkToDataURL(data.full, 700000);
+  cloudThumbs[id] = thumb;
+  fs.setDoc(cdoc('photosFull', id), {full}).catch(cloudErr);
+  fs.setDoc(cdoc('photos', id), {thumb, by:cloud.user.uid}).catch(cloudErr);
+}
+function cloudDelPhoto(id) {
+  const fs = cloud.fb.fs;
+  delete cloudThumbs[id];
+  fs.deleteDoc(cdoc('photos', id)).catch(cloudErr);
+  fs.deleteDoc(cdoc('photosFull', id)).catch(cloudErr);
+}
+async function cloudFullPhoto(id) {
+  try { const d = await cloud.fb.fs.getDoc(cdoc('photosFull', id)); return d.exists() ? d.data().full : cloudThumbs[id]; }
+  catch { return cloudThumbs[id]; }
+}
+function cloudPutTrip(t) { const {id, ...data} = t; cloud.fb.fs.setDoc(cdoc('trips', id), data).catch(cloudErr); }
+function cloudDelTrip(id) { cloud.fb.fs.deleteDoc(cdoc('trips', id)).catch(cloudErr); }
+function cloudSaveGlobe(patch) { cloud.fb.fs.updateDoc(cdoc(), patch).catch(cloudErr); }
+function cloudSaveCountry(name) {
+  const fs = cloud.fb.fs, v = state.countries[name];
+  fs.updateDoc(cdoc(), new fs.FieldPath('countries', name), v === undefined ? fs.deleteField() : v).catch(cloudErr);
+}
+async function copyLocalInto(map) {
+  const done = new Set(state.trips.filter(t => t.src && t.by === cloud.user.uid).map(t => t.src));
+  const todo = localState.trips.filter(t => !done.has(t.id));
+  if (!todo.length) { toast('Everything is already on this globe'); return; }
+  toast(`Copying ${todo.length} trip${todo.length > 1 ? 's' : ''}…`);
+  for (const t of todo) {
+    const who = [...new Set(whoIds(t).map(i => map[i]).filter(Boolean))];
+    if (!who.length) who.push(cloud.user.uid);
+    const photos = [];
+    for (const pid of t.photos || []) {
+      const d = db ? await idb('photos', 'readonly', s => s.get(pid)) : memPhotos[pid];
+      if (!d) continue;
+      const id = uid(); await cloudPutPhoto(id, d); photos.push(id);
+    }
+    cloudPutTrip({id:uid(), created:t.created || Date.now(), country:t.country, place:t.place || '', start:t.start, end:t.end || '', note:t.note || '', who, photos, by:cloud.user.uid, src:t.id});
+  }
+  toast('Your private globe has been copied here');
+}
+
+/* friends page */
+const PEOPLE_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="3.3"/><circle cx="16.5" cy="9" r="2.8"/><path d="M1.5 19.5c0-3.4 2.9-5.8 6.5-5.8s6.5 2.4 6.5 5.8z"/><path d="M14.6 19.5c0-2.4-.9-4.3-2.4-5.5 1.3-.6 2.7-.8 4.3-.8 3.2 0 6 2.1 6 5.2v1.1z"/></svg>';
+function avatar(p, online) {
+  const ring = `box-shadow:0 0 0 2px ${p.color}`;
+  const face = p.photo
+    ? `<img class="av" src="${esc(p.photo)}" referrerpolicy="no-referrer" alt="" style="${ring}">`
+    : `<span class="av" style="background:${p.color};${ring}">${esc((p.name || '?').trim()[0] || '?').toUpperCase()}</span>`;
+  return `<span class="avw">${face}${online ? '<i class="online"></i>' : ''}</span>`;
+}
+const relTime = ms => {
+  const s = (ms - Date.now()) / 1000, rtf = new Intl.RelativeTimeFormat(undefined, {numeric:'auto'});
+  for (const [u, n] of [['day', 86400], ['hour', 3600], ['minute', 60]]) if (Math.abs(s) >= n) return rtf.format(Math.round(s / n), u);
+  return 'just now';
+};
+function updateAcct() {
+  const b = $('#acctBtn');
+  if (!cloud.user) { b.innerHTML = `${PEOPLE_ICON}<span class="lbl long">${CFG ? 'Sign in' : 'Friends'}</span>`; return; }
+  if (!cloud.gid) { b.innerHTML = `${avatar({name:cloud.user.displayName, photo:cloud.user.photoURL, color:'#6b5236'})}<span class="lbl long">Private</span>`; return; }
+  const on = people.filter(isOnline);
+  const shown = [...on, ...people.filter(p => !isOnline(p))].slice(0, 3);
+  b.innerHTML = shown.map(p => avatar(p, isOnline(p))).join('') + (on.length > 1 ? `<span class="lbl">${on.length} here</span>` : '');
+  b.title = `${people.length} on this globe, ${on.length} exploring now`;
+}
+function renderPeople(body, title) {
+  title.textContent = cloud.gid ? (cloud.globes[cloud.gid] || 'Shared globe') : 'Friends';
+  if (!CFG) {
+    body.innerHTML = `<div class="hero"><p>Shared globes let friends sign in with Google and scratch off their travels on one globe together.</p><p class="sub">This needs a one-time setup of a free Firebase project. The steps are in the README.</p></div>`;
+    return;
+  }
+  if (!cloud.user) {
+    body.innerHTML = `<div class="hero">
+      <p>${ls.get('sg-join') ? 'You have been invited to join a shared globe.' : "Sign in to make a shared globe with friends. Everyone scratches off their own adventures, and you all see each other's trips, notes and photographs."}</p>
+      <button class="btn primary gbtn" data-act="signin"><b>G</b>Sign in with Google</button>
+      <p class="sub" style="margin-top:14px">Your private globe stays on this device. Nothing is shared until you choose to.</p></div>`;
+    return;
+  }
+  const u = cloud.user, gids = Object.keys(cloud.globes);
+  let h = `<div class="me-row">${avatar({name:u.displayName, photo:u.photoURL, color:'#6b5236'})}<div class="nm"><b>${esc(u.displayName || 'Signed in')}</b><small>${esc(u.email || '')}</small></div><button class="btn small" data-act="signout">Sign out</button></div>
+    <div class="globes"><h5>Your globes</h5>
+      <div class="row ${cloud.gid ? '' : 'on'}" data-act="useglobe" data-g=""><div class="nm"><b>Private globe</b><small>only on this device</small></div></div>
+      ${gids.map(g => `<div class="row ${cloud.gid === g ? 'on' : ''}" data-act="useglobe" data-g="${esc(g)}"><div class="nm"><b>${esc(cloud.globes[g])}</b><small>shared</small></div></div>`).join('')}
+      <button class="btn" style="margin-top:10px" data-act="newglobe">+ New shared globe</button>
+    </div>`;
+  if (cloud.gid) {
+    const link = location.origin + location.pathname + '?join=' + cloud.gid;
+    const countriesOf = id => new Set(state.trips.filter(t => whoIds(t).includes(id)).map(t => t.country)).size;
+    const list = [...people].sort((a, b) => (isOnline(b) - isOnline(a)) || msOf(b.lastActive) - msOf(a.lastActive));
+    const owner = cloud.globe && cloud.globe.owner === u.uid;
+    const me = people.find(p => p.me);
+    h += `<div class="rule"></div><div class="people">
+      <h5>Invite friends</h5>
+      <div class="invite"><input type="text" readonly value="${esc(link)}" id="inviteLink"><button class="btn small" data-act="invite">${navigator.share ? 'Share' : 'Copy'}</button></div>
+      <p class="sub">Anyone with this link can sign in and join.</p>
+      <h5>Travellers on this globe · ${list.filter(isOnline).length} exploring now</h5>
+      ${list.map(p => `<div class="row">${avatar(p, isOnline(p))}<div class="nm"><b>${esc(p.name)}${p.me ? ' (you)' : ''}</b><small>${isOnline(p) ? 'Exploring the globe now' : p.lastActive ? 'Last seen ' + relTime(msOf(p.lastActive)) : 'Not seen yet'} · ${countriesOf(p.id)} ${countriesOf(p.id) === 1 ? 'country' : 'countries'}</small></div>${owner && !p.me ? `<button class="icon x" data-act="kick" data-id="${esc(p.id)}" title="Remove from this globe">✕</button>` : ''}</div>`).join('')}
+      ${me ? `<h5>Your colour</h5><div class="sw">${PALETTE.map(c => `<button type="button" data-act="mycolor" data-c="${c}" class="${c === me.color ? 'on' : ''}" style="background:${c}" title="${people.some(p => !p.me && p.color === c) ? 'Taken' : ''}"></button>`).join('')}</div>` : ''}
+      ${localState.trips.length ? `<h5>Bring your private globe here</h5>
+        <p class="sub">Copies the ${localState.trips.length} trips and photographs from this device onto “${esc(cloud.globes[cloud.gid] || 'this globe')}”.</p>
+        <div class="copyform">${['a', 'b'].map(k => `<span>${esc(localState.names[k])} is</span><select data-map="${k}"><option value="">nobody here</option>${people.map(p => `<option value="${esc(p.id)}" ${(k === 'a' && p.me) ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>`).join('')}</div>
+        <button class="btn" data-act="copylocal">Copy my private globe</button>` : ''}
+      <div class="rule"></div>
+      <button class="btn danger" data-act="leave">Leave this globe</button>
+    </div>`;
+  }
+  body.innerHTML = h;
+}
+async function peopleAction(act, el) {
+  if (act === 'signin') signIn();
+  else if (act === 'signout') { if (confirm('Sign out? Your private globe stays on this device.')) await signOutCloud(); }
+  else if (act === 'useglobe') { if (el.dataset.g) openGlobe(el.dataset.g); else useLocal(true); }
+  else if (act === 'newglobe') {
+    const name = (prompt('Name your shared globe', 'Our adventures') || '').trim();
+    if (name) { try { await createGlobe(name.slice(0, 60)); toast(`“${name}” created. Now invite your friends!`); } catch (e) { cloudErr(e); } }
+  }
+  else if (act === 'invite') {
+    const link = $('#inviteLink').value, name = cloud.globes[cloud.gid];
+    if (navigator.share) navigator.share({title:'Our Scratch Globe', text:`Join “${name}”, our shared scratch globe`, url:link}).catch(() => {});
+    else { try { await navigator.clipboard.writeText(link); toast('Invite link copied'); } catch { $('#inviteLink').select(); } }
+  }
+  else if (act === 'mycolor') setMyMember({color:el.dataset.c});
+  else if (act === 'kick') { if (confirm(`Remove ${nameOf(el.dataset.id)} from this globe? Their trips stay.`)) cloud.fb.fs.deleteDoc(cdoc('members', el.dataset.id)).catch(cloudErr); }
+  else if (act === 'leave') {
+    const gid = cloud.gid;
+    if (!confirm(`Leave “${cloud.globes[gid]}”? Your trips stay on it for the others.`)) return;
+    const {fs, fdb} = cloud.fb, ref = fs.doc(fdb, 'globes', gid, 'members', cloud.user.uid);
+    useLocal(true); forgetGlobe(gid);
+    fs.deleteDoc(ref).catch(cloudErr);
+  }
+  else if (act === 'copylocal') {
+    const map = {};
+    document.querySelectorAll('[data-map]').forEach(s => map[s.dataset.map] = s.value);
+    copyLocalInto(map).catch(cloudErr);
+  }
+}
 
 /* ───────────── journey animation ───────────── */
 const J = {active:false, playing:false, stops:[], legs:[], i:0, shown:0, phase:'goto', t:0, speed:1, done:false, from:null, to:null, capKey:''};
@@ -1180,7 +1606,7 @@ function updateJUI() {
     html = `<div class="n">En route</div><h3>${esc(s.trip.country)} to ${esc(nx.trip.country)}</h3><div class="sub">${fmtDate(nx.trip.start)}</div>`;
   } else if (J.phase === 'dwell') {
     const t = s.trip, ph = (t.photos || [])[0];
-    html = `<div class="n">Chapter ${J.i + 1} of ${n}</div><h3>${esc(t.country)}</h3><div class="sub">${t.place ? esc(t.place) + ' · ' : ''}${fmtRange(t)} · ${esc(whoLabel(t.who))}</div>${t.note ? `<p>${esc(t.note)}</p>` : ''}${ph ? `<div class="ph"><img src="${thumbURL[ph]}" alt=""></div>` : ''}`;
+    html = `<div class="n">Chapter ${J.i + 1} of ${n}</div><h3>${esc(t.country)}</h3><div class="sub">${t.place ? esc(t.place) + ' · ' : ''}${fmtRange(t)} · ${esc(namesOf(whoIds(t)))}</div>${t.note ? `<p>${esc(t.note)}</p>` : ''}${ph ? `<div class="ph"><img src="${thumbOf(ph)}" alt=""></div>` : ''}`;
     if (J.done) html += `<p class="sub" style="margin-top:10px">The end… for now. ${new Set(J.stops.map(x => x.trip.country)).size} countries and counting. Press ↻ to relive it.</p>`;
   }
   if (J.capKey !== html) { J.capKey = html; cap.innerHTML = html; cap.classList.toggle('on', !!html); }
@@ -1209,7 +1635,7 @@ function drawJourney(now) {
     const cur = i === J.i && J.phase !== 'fly', r = cur ? 11 : 8.5;
     ctx.fillStyle = '#f6ecd2'; ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
     ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(x, y, r - 2.5, 0, 7); ctx.strokeStyle = COLORS[J.stops[i].trip.who]; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, r - 2.5, 0, 7); ctx.strokeStyle = colorOf(tripKey(J.stops[i].trip)); ctx.lineWidth = 1.2; ctx.stroke();
     ctx.fillStyle = INK; ctx.font = `${cur ? 13 : 11}px "IM Fell English",Georgia,serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(i + 1, x, y + .5);
     if (cur) {
@@ -1251,6 +1677,8 @@ addEventListener('keydown', e => {
 
 /* ───────────── boot ───────────── */
 (async function boot() {
+  const joinId = new URLSearchParams(location.search).get('join');
+  if (joinId) { ls.set('sg-join', joinId); history.replaceState(null, '', location.pathname); }
   resize();
   try {
     const [hi, lo] = await Promise.all([
@@ -1268,8 +1696,15 @@ addEventListener('keydown', e => {
   refresh();
   requestAnimationFrame(frame);
   $('#loading').classList.add('done');
+  if (CFG && (ls.get('sg-auth') || ls.get('sg-join'))) startCloud();
+  if (ls.get('sg-join')) setMode('people');
   cam.zoom = .8; cam.target = {lam:cam.lam, zoom:1, pan:[0, 0]};
-  window.app = {get state() { return state; }, importData, exportData, startJourney, selectCountry, setMode};
+  window.app = {get state() { return state; }, get cloud() { return cloud; }, importData, exportData, startJourney, selectCountry, setMode};
+  if (CFG && CFG.emulators) app.testSignIn = async (name, email) => {   // local testing against the Firebase emulators only
+    await startCloud();
+    const {auth, au} = cloud.fb;
+    await auth.signInWithCredential(au, auth.GoogleAuthProvider.credential(JSON.stringify({sub:email, email, name, email_verified:true})));
+  };
 })();
 })();
 </script>

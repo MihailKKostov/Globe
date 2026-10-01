@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isMember(gid) {
+      return signedIn() && exists(/databases/$(database)/documents/globes/$(gid)/members/$(request.auth.uid));
+    }
+    function isOwner(gid) {
+      return signedIn() && get(/databases/$(database)/documents/globes/$(gid)).data.owner == request.auth.uid;
+    }
+
+    // each person's own list of globes they belong to
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /globes/{gid} {
+      // the globe id is the invitation: anyone signed in who has the link can see its name and join
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.owner == request.auth.uid;
+      allow update: if isMember(gid) && request.resource.data.owner == resource.data.owner;
+      allow delete: if isOwner(gid);
+
+      match /members/{uid} {
+        allow get: if isMember(gid) || (signedIn() && request.auth.uid == uid);
+        allow list: if isMember(gid);
+        allow create, update: if signedIn() && request.auth.uid == uid;
+        allow delete: if signedIn() && (request.auth.uid == uid || isOwner(gid));
+      }
+      match /trips/{id} { allow read, write: if isMember(gid); }
+      match /photos/{id} { allow read, write: if isMember(gid); }
+      match /photosFull/{id} { allow read, write: if isMember(gid); }
+    }
+  }
+}
