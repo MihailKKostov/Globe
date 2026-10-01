@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="theme-color" content="#060919">
+<meta name="theme-color" content="#e6d3ab">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
@@ -12,184 +12,210 @@
 <title>Our Scratch Globe</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#060919; --ink:#eef1ff; --mute:#9aa3c7; --line:rgba(255,255,255,.1);
-  --glass:rgba(14,19,46,.78); --glass2:rgba(255,255,255,.06);
-  --both:#ff6b81; --a:#3dd6c6; --b:#ffc857; --accent:#ff8fa3;
-  --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;
-  --panel-w:420px;
+  --paper:#f3e6c8; --paper2:#ead8b0; --edge:#b39466;
+  --ink:#3a2816; --ink2:#6b5236; --line:rgba(90,60,30,.28);
+  --both:#a8323a; --a:#2f6f73; --b:#c08a2e; --wax:#8e2b2f;
+  --title:'IM Fell English SC','IM Fell English',Georgia,serif;
+  --serif:'IM Fell English',Georgia,'Times New Roman',serif;
+  --body:'EB Garamond',Georgia,'Times New Roman',serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px}
-body{background:radial-gradient(1200px 800px at 80% -10%,#1c1450 0,transparent 60%),radial-gradient(900px 700px at 0% 110%,#0b2a52 0,transparent 55%),var(--bg)}
+html,body{margin:0;height:100%;overflow:hidden;background:#e6d3ab;color:var(--ink);font-family:var(--body);font-size:16px}
+/* paper grain over everything (a static layer, cheap to composite) */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:200;opacity:.16;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .23 0 0 0 0 .1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 #globe{touch-action:none;cursor:grab}
 #globe.drag{cursor:grabbing}
 #globe.hover{cursor:pointer}
 button{font:inherit;color:inherit;cursor:pointer}
-.btn{background:var(--glass2);border:1px solid var(--line);border-radius:999px;padding:8px 14px;transition:.15s;white-space:nowrap}
-.btn:hover{background:rgba(255,255,255,.13)}
-.btn.primary{background:linear-gradient(135deg,#ff6b81,#ff9a62);border:0;color:#2a0710;font-weight:600}
-.btn.primary:hover{filter:brightness(1.08)}
-.btn.small{padding:4px 10px;font-size:12px}
-.btn.danger{color:#ff9aa6}
-.icon{width:34px;height:34px;padding:0;display:inline-grid;place-items:center;border-radius:50%;background:var(--glass2);border:1px solid var(--line)}
-.icon:hover{background:rgba(255,255,255,.14)}
+.btn{background:transparent;border:1px solid var(--ink2);border-radius:3px;padding:6px 14px;transition:.15s;white-space:nowrap;font-family:var(--serif);color:var(--ink)}
+.btn:hover{background:rgba(90,60,30,.08)}
+.btn.primary{background:var(--wax);border-color:#5e1a1d;color:#f7ead0;box-shadow:inset 0 0 0 1px rgba(255,230,200,.25),0 2px 4px rgba(60,20,10,.25)}
+.btn.primary:hover{background:#9d3236}
+.btn.small{padding:2px 10px;font-size:14px}
+.btn.danger{color:var(--wax);border-color:rgba(142,43,47,.6)}
+.icon{width:36px;height:36px;padding:0;display:inline-grid;place-items:center;border-radius:50%;background:var(--paper);border:1px solid var(--ink2);color:var(--ink);font-size:16px}
+.icon:hover{background:var(--paper2)}
 
 /* header */
-header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:14px;padding:12px 18px;z-index:10;pointer-events:none}
+header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:16px;padding:12px 20px;z-index:10;pointer-events:none}
 header>*{pointer-events:auto}
-.brand{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
-.brand i{font-style:normal;color:var(--accent)}
-.stats{color:var(--mute);font-size:13px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.stats b{color:var(--ink);font-weight:600}
-.stats .dotsep{opacity:.4}
+.brand{display:flex;flex-direction:column;line-height:1}
+.brand b{font-family:var(--title);font-weight:400;font-size:30px;letter-spacing:.5px;color:var(--ink)}
+.brand small{font-family:var(--serif);font-style:italic;color:var(--ink2);font-size:15px;margin-top:3px}
+.stats{color:var(--ink2);font-size:15px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;font-style:italic}
+.stats b{color:var(--ink);font-style:normal;font-family:var(--serif);font-size:18px;font-weight:400}
+.stats .sep{opacity:.5}
 .spacer{flex:1}
-nav{display:flex;gap:6px;background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:4px;backdrop-filter:blur(14px)}
-nav button{background:none;border:0;border-radius:999px;padding:7px 14px;color:var(--mute)}
+nav{display:flex;gap:2px;background:var(--paper);border:1px solid var(--edge);border-radius:3px;padding:3px;box-shadow:0 2px 8px rgba(70,45,20,.18)}
+nav button{background:none;border:0;border-radius:2px;padding:5px 13px;color:var(--ink2);font-family:var(--serif);font-size:16px}
 nav button:hover{color:var(--ink)}
-nav button.on{background:rgba(255,255,255,.14);color:var(--ink)}
+nav button.on{background:var(--ink);color:var(--paper)}
 
-/* legend */
-#legend{position:fixed;left:18px;bottom:18px;z-index:5;display:flex;gap:14px;font-size:12px;color:var(--mute);background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:7px 14px;backdrop-filter:blur(12px)}
+/* legend & hint */
+#legend{position:fixed;left:20px;bottom:18px;z-index:5;display:flex;gap:14px;font-size:15px;color:var(--ink2);font-style:italic;background:var(--paper);border:1px solid var(--edge);border-radius:3px;padding:6px 14px;box-shadow:0 2px 8px rgba(70,45,20,.15)}
 #legend span{display:flex;align-items:center;gap:6px}
-#legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
-#hint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:4;color:var(--mute);font-size:13px;background:var(--glass);border:1px solid var(--line);padding:8px 16px;border-radius:999px;backdrop-filter:blur(12px);transition:opacity .4s;pointer-events:none;text-align:center}
+#legend i{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid rgba(40,25,10,.5)}
+#hint{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:4;color:var(--ink2);font-style:italic;font-size:15px;background:var(--paper);border:1px solid var(--edge);padding:6px 16px;border-radius:3px;transition:opacity .4s;pointer-events:none;text-align:center}
 #hint.hide{opacity:0}
-#tip{position:fixed;z-index:20;pointer-events:none;background:rgba(8,12,32,.92);border:1px solid var(--line);padding:5px 10px;border-radius:8px;font-size:12px;transform:translate(12px,12px);opacity:0;transition:opacity .1s;white-space:nowrap}
+#tip{position:fixed;z-index:20;pointer-events:none;background:var(--paper);border:1px solid var(--ink2);padding:3px 10px;border-radius:2px;font-family:var(--serif);font-size:15px;transform:translate(14px,14px);opacity:0;transition:opacity .1s;white-space:nowrap;box-shadow:2px 3px 0 rgba(60,40,20,.15)}
 
-/* panel */
-#panel{position:fixed;top:68px;right:14px;bottom:14px;width:var(--panel-w);z-index:8;background:var(--glass);border:1px solid var(--line);border-radius:20px;backdrop-filter:blur(18px);display:flex;flex-direction:column;transform:translateX(calc(100% + 30px));transition:transform .35s cubic-bezier(.2,.8,.2,1);box-shadow:0 20px 60px rgba(0,0,0,.45)}
+/* side panel = a page from a travel journal */
+#panel{position:fixed;top:78px;right:16px;bottom:16px;width:400px;z-index:8;background:var(--paper);border:1px solid var(--edge);border-radius:3px;display:flex;flex-direction:column;transform:translateX(calc(100% + 30px));transition:transform .35s cubic-bezier(.2,.8,.2,1);
+  box-shadow:inset 0 0 0 5px var(--paper),inset 0 0 0 6px rgba(120,85,45,.45),inset 0 0 60px rgba(150,105,50,.25),0 10px 30px rgba(60,35,15,.35)}
 #panel.open{transform:none}
-.panel-head{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
-.panel-head h2{margin:0;font-family:var(--serif);font-size:22px;flex:1;line-height:1.15}
-#panelBody{overflow:auto;padding:4px 16px 18px;flex:1}
-#panelBody::-webkit-scrollbar{width:8px}#panelBody::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:8px}
-.sub{color:var(--mute);font-size:13px}
-.empty{color:var(--mute);text-align:center;padding:36px 12px;line-height:1.6}
-.bar{height:6px;background:rgba(255,255,255,.09);border-radius:6px;overflow:hidden;margin:8px 0 14px}
-.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--both));border-radius:6px}
-input[type=search],input[type=text],input[type=date],select,textarea{width:100%;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:9px 12px;font:inherit;outline:none}
-input:focus,select:focus,textarea:focus{border-color:rgba(255,143,163,.7)}
-select option{background:#10163a}
-input[type=date]{color-scheme:dark}
-.seg{display:flex;gap:4px;margin:10px 0}
-.seg button{flex:1;background:var(--glass2);border:1px solid var(--line);border-radius:10px;padding:6px;color:var(--mute)}
-.seg button.on{color:var(--ink);background:rgba(255,255,255,.15)}
-.row{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:12px;cursor:pointer}
-.row:hover{background:var(--glass2)}
+.panel-head{display:flex;align-items:center;gap:10px;padding:16px 18px 8px}
+.panel-head h2{margin:0;font-family:var(--title);font-weight:400;font-size:28px;flex:1;line-height:1.1}
+#panelBody{overflow:auto;padding:2px 18px 20px;flex:1}
+#panelBody::-webkit-scrollbar{width:8px}#panelBody::-webkit-scrollbar-thumb{background:rgba(90,60,30,.3);border-radius:8px}
+.sub{color:var(--ink2);font-style:italic;font-size:15px}
+.empty{color:var(--ink2);text-align:center;padding:32px 10px;line-height:1.6;font-style:italic}
+.rule{height:9px;margin:10px 0;background:radial-gradient(circle,var(--ink2) 1.5px,transparent 2px) center/12px 9px repeat-x;opacity:.5}
+.bar{height:8px;background:rgba(90,60,30,.12);border:1px solid var(--line);border-radius:4px;overflow:hidden;margin:8px 0 14px}
+.bar i{display:block;height:100%;background:repeating-linear-gradient(45deg,var(--both) 0 6px,#922a31 6px 12px)}
+input[type=search],input[type=text],input[type=date],select,textarea{width:100%;background:rgba(255,250,235,.6);border:1px solid var(--edge);border-radius:2px;color:var(--ink);padding:7px 10px;font:inherit;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--wax);background:#fffaf0}
+select option{background:#f8efd9}
+.seg{display:flex;margin:10px 0;border:1px solid var(--ink2);border-radius:3px;overflow:hidden}
+.seg button{flex:1;background:none;border:0;padding:5px;color:var(--ink2);font-family:var(--serif)}
+.seg button+button{border-left:1px solid var(--ink2)}
+.seg button.on{color:var(--paper);background:var(--ink)}
+.row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px dotted var(--line);cursor:pointer}
+.row:hover{background:rgba(90,60,30,.06)}
 .row .nm{flex:1;min-width:0}
-.row .nm b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row small{color:var(--mute)}
-.dot{width:10px;height:10px;border-radius:50%;flex:none;background:#59627f}
+.row .nm b{display:block;font-weight:400;font-family:var(--serif);font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row small{color:var(--ink2);font-style:italic}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;background:transparent;border:1px solid var(--ink2)}
 .dot.both{background:var(--both)}.dot.a{background:var(--a)}.dot.b{background:var(--b)}
-.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 9px;border-radius:999px;background:var(--glass2);border:1px solid var(--line);color:var(--mute)}
-.chip .dot{width:7px;height:7px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-style:italic;color:var(--ink2)}
+.chip .dot{width:9px;height:9px}
 
-.card{background:var(--glass2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
-.card h4{margin:0 0 2px;font-family:var(--serif);font-size:17px;font-weight:500}
-.card .meta{color:var(--mute);font-size:12.5px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
-.card p{margin:6px 0;white-space:pre-wrap;line-height:1.5}
+.card{background:rgba(255,250,235,.55);border:1px solid var(--line);border-radius:2px;padding:12px 14px;margin:12px 0;box-shadow:2px 3px 0 rgba(90,60,30,.08)}
+.card h4{margin:0 0 2px;font-family:var(--serif);font-size:20px;font-weight:400}
+.card .meta{color:var(--ink2);font-size:14.5px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:4px;font-style:italic}
+.card p{margin:6px 0;white-space:pre-wrap;line-height:1.45}
 .card .acts{display:flex;gap:6px;margin-top:8px}
-.link{cursor:pointer}.link:hover{text-decoration:underline}
-.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
-.thumbs button{padding:0;border:0;background:#0003;border-radius:8px;overflow:hidden;aspect-ratio:1;position:relative}
-.thumbs img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
-.thumbs button:hover img{transform:scale(1.07)}
-.thumbs .more{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.55);font-weight:600}
+.link{cursor:pointer;text-decoration:underline dotted rgba(90,60,30,.5);text-underline-offset:3px}.link:hover{color:var(--wax)}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0 6px}
+.thumbs button{padding:4px 4px 10px;border:0;background:#fbf6ea;border-radius:1px;aspect-ratio:.9;position:relative;box-shadow:1px 2px 4px rgba(60,40,20,.3);transition:transform .2s}
+.thumbs button:nth-child(odd){transform:rotate(-2.5deg)}.thumbs button:nth-child(even){transform:rotate(2deg)}
+.thumbs button:hover{transform:rotate(0) scale(1.06);z-index:2}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block;filter:sepia(.18)}
+.thumbs .more{position:absolute;inset:4px 4px 10px;display:grid;place-items:center;background:rgba(40,25,10,.55);color:var(--paper);font-family:var(--serif)}
 
-.tl{position:relative;margin-left:8px;padding-left:22px;border-left:2px solid var(--line)}
-.tl h3{font-family:var(--serif);font-size:20px;margin:22px 0 4px -22px;color:var(--mute);font-weight:500}
+.tl{position:relative;margin-left:8px;padding-left:22px;border-left:2px dashed rgba(142,43,47,.5)}
+.tl h3{font-family:var(--title);font-size:24px;margin:22px 0 2px -22px;color:var(--ink2);font-weight:400;background:var(--paper);display:inline-block;padding-right:8px}
 .tl h3:first-child{margin-top:4px}
 .tl .item{position:relative}
-.tl .item::before{content:"";position:absolute;left:-30px;top:18px;width:12px;height:12px;border-radius:50%;background:var(--c,#59627f);box-shadow:0 0 0 4px var(--bg),0 0 14px var(--c)}
+.tl .item::before{content:"";position:absolute;left:-31px;top:16px;width:14px;height:14px;border-radius:50%;background:var(--c,#999);border:2px solid var(--paper);box-shadow:0 0 0 1px var(--ink2)}
+
+/* pin pickers */
+.pinbox h5{margin:0 0 6px;font-family:var(--serif);font-weight:400;font-size:19px}
+.pins{display:flex;flex-wrap:wrap;gap:6px}
+.pins button{width:46px;height:46px;padding:0;border:1px solid var(--line);background:rgba(255,250,235,.6);border-radius:3px;display:grid;place-items:center;font-size:14px;font-style:italic;color:var(--ink2)}
+.pins button.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);background:#fffaf0;color:var(--ink)}
+.pins button.txt{width:auto;padding:0 12px}
+.pins canvas{position:static;width:40px;height:40px;pointer-events:none}
+.sw{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.sw button{width:28px;height:28px;border-radius:50%;padding:0;border:2px solid var(--paper);box-shadow:0 0 0 1px var(--ink2);font-size:13px;font-style:italic}
+.sw button.on{box-shadow:0 0 0 2.5px var(--ink)}
+.sw button.auto{background:conic-gradient(var(--both) 0 33%,var(--a) 0 66%,var(--b) 0)}
+.sw button.def{background:var(--paper);color:var(--ink2);width:auto;border-radius:14px;padding:0 10px}
+.toggle{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:16px;flex-direction:row;font-style:normal}
+.toggle input{width:18px;height:18px;accent-color:var(--wax)}
 
 /* journey */
-#jbar{position:fixed;left:50%;bottom:18px;transform:translate(-50%,160%);z-index:9;width:min(760px,calc(100% - 28px));background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:8px 12px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
-#jbar.on{transform:translate(-50%,0)}
-#jbar:not(.on){visibility:hidden}
+#jbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9;width:min(760px,calc(100% - 28px));background:var(--paper);border:1px solid var(--edge);border-radius:3px;padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(60,35,15,.3)}
+#jbar:not(.on){display:none}
 #track{flex:1;display:flex;justify-content:space-between;align-items:center;position:relative;height:26px;padding:0 6px;min-width:60px}
-#track::before{content:"";position:absolute;left:6px;right:6px;top:50%;height:2px;background:var(--line);transform:translateY(-50%)}
-#track .fill{position:absolute;left:6px;top:50%;height:2px;background:linear-gradient(90deg,var(--a),var(--both));transform:translateY(-50%);transition:width .2s}
-#track button{position:relative;width:12px;height:12px;padding:0;border-radius:50%;border:2px solid #59627f;background:var(--bg);flex:none}
-#track button.done{border-color:var(--both);background:var(--both)}
-#track button.cur{transform:scale(1.5);box-shadow:0 0 12px var(--both)}
-#cap{position:fixed;left:18px;top:76px;width:300px;z-index:7;background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:14px 16px;backdrop-filter:blur(16px);opacity:0;transform:translateY(-8px);transition:.3s;pointer-events:none}
-#cap.on{opacity:1;transform:none}
-#cap .n{color:var(--accent);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
-#cap h3{font-family:var(--serif);font-size:26px;margin:2px 0 2px;line-height:1.1}
-#cap p{margin:8px 0 0;line-height:1.5;max-height:110px;overflow:hidden;white-space:pre-wrap}
-#cap img{width:100%;height:150px;object-fit:cover;border-radius:12px;margin-top:10px;display:block}
+#track::before{content:"";position:absolute;left:6px;right:6px;top:50%;border-top:2px dotted var(--ink2);opacity:.5}
+#track .fill{position:absolute;left:6px;top:50%;border-top:2px dashed var(--wax);transform:translateY(-1px)}
+#track button{position:relative;width:12px;height:12px;padding:0;border-radius:50%;border:1.5px solid var(--ink2);background:var(--paper);flex:none}
+#track button.done{border-color:var(--wax);background:var(--wax)}
+#track button.cur{transform:scale(1.5)}
+#cap{position:fixed;left:20px;top:92px;width:290px;z-index:7;background:#fbf4e2;border:1px solid var(--edge);padding:16px 18px 14px;opacity:0;transform:rotate(-1.2deg) translateY(-8px);transition:.35s;pointer-events:none;box-shadow:0 8px 24px rgba(60,35,15,.3)}
+#cap.on{opacity:1;transform:rotate(-1.2deg)}
+#cap .n{color:var(--wax);font-size:14px;letter-spacing:.14em;text-transform:uppercase;font-family:var(--serif)}
+#cap h3{font-family:var(--title);font-weight:400;font-size:30px;margin:2px 0;line-height:1.05}
+#cap p{margin:8px 0 0;line-height:1.45;max-height:110px;overflow:hidden;white-space:pre-wrap}
+#cap .ph{margin:14px auto 0;background:#fff;padding:6px 6px 18px;box-shadow:1px 3px 6px rgba(50,30,10,.35);transform:rotate(2deg);position:relative;width:88%}
+#cap .ph::before{content:"";position:absolute;top:-9px;left:50%;width:70px;height:20px;transform:translateX(-50%) rotate(-3deg);background:rgba(230,215,170,.8);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+#cap img{width:100%;height:140px;object-fit:cover;display:block;filter:sepia(.2)}
 
 /* dialogs */
-dialog{border:1px solid var(--line);background:#0e1330;color:var(--ink);border-radius:20px;padding:0;width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);box-shadow:0 30px 80px rgba(0,0,0,.6)}
-dialog::backdrop{background:rgba(3,5,16,.65);backdrop-filter:blur(4px)}
-dialog form{padding:20px 22px;display:flex;flex-direction:column;gap:12px}
-dialog h2{margin:0 0 4px;font-family:var(--serif);font-size:24px}
-label{display:flex;flex-direction:column;gap:5px;color:var(--mute);font-size:12px}
+dialog{border:1px solid var(--edge);background:var(--paper);color:var(--ink);border-radius:3px;padding:0;width:min(540px,calc(100% - 20px));max-height:calc(100% - 20px);
+  box-shadow:inset 0 0 0 5px var(--paper),inset 0 0 0 6px rgba(120,85,45,.45),inset 0 0 70px rgba(150,105,50,.25),0 20px 60px rgba(40,20,5,.45)}
+dialog::backdrop{background:rgba(50,30,10,.45)}
+dialog form{padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+dialog h2{margin:0 0 2px;font-family:var(--title);font-weight:400;font-size:30px}
+label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15px;font-style:italic}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.who{display:flex;gap:6px;flex-wrap:wrap}
-.who label{flex-direction:row;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;color:var(--ink);font-size:13px}
+.who{display:flex;gap:6px;flex-wrap:wrap;font-style:normal}
+.who label{flex-direction:row;align-items:center;gap:6px;border:1px solid var(--edge);border-radius:3px;padding:4px 12px;cursor:pointer;color:var(--ink);font-style:normal}
 .who input{display:none}
-.who label:has(input:checked){background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4)}
-.drop{border:1.5px dashed rgba(255,255,255,.25);border-radius:14px;padding:12px;text-align:center;color:var(--mute);cursor:pointer}
-.drop.over{border-color:var(--accent);background:var(--glass2)}
-.pthumbs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
-.pthumbs div{position:relative;aspect-ratio:1}
-.pthumbs img{width:100%;height:100%;object-fit:cover;border-radius:8px}
-.pthumbs button{position:absolute;top:-5px;right:-5px;width:20px;height:20px;border-radius:50%;border:0;background:#ff5a73;color:#fff;font-size:12px;line-height:1;padding:0}
+.who label:has(input:checked){background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.drop{border:1.5px dashed var(--ink2);border-radius:3px;padding:12px;text-align:center;color:var(--ink2);cursor:pointer;font-style:italic}
+.drop.over{border-color:var(--wax);background:rgba(142,43,47,.06)}
+.pthumbs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
+.pthumbs div{position:relative;aspect-ratio:1;background:#fff;padding:3px;box-shadow:1px 2px 3px rgba(60,40,20,.3)}
+.pthumbs img{width:100%;height:100%;object-fit:cover}
+.pthumbs button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:0;background:var(--wax);color:#fff;font-size:12px;line-height:1;padding:0}
 .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
-#lightbox{position:fixed;inset:0;z-index:50;background:rgba(2,4,12,.92);display:none;align-items:center;justify-content:center}
+#lightbox{position:fixed;inset:0;z-index:150;background:rgba(30,18,6,.88);display:none;align-items:center;justify-content:center}
 #lightbox.on{display:flex}
-#lightbox img{max-width:92vw;max-height:88vh;border-radius:10px;box-shadow:0 20px 80px #000}
-#lightbox .nav{position:absolute;top:50%;transform:translateY(-50%);font-size:26px}
+#lightbox img{max-width:90vw;max-height:84vh;background:#fff;padding:10px 10px 34px;box-shadow:0 20px 60px #000}
+#lightbox .nav{position:absolute;top:50%;transform:translateY(-50%);font-size:24px}
 #lightbox .prev{left:16px}#lightbox .next{right:16px}#lightbox .x{position:absolute;top:16px;right:16px}
-#toast{position:fixed;left:50%;top:72px;transform:translate(-50%,-20px);z-index:60;background:#1a2150;border:1px solid var(--line);padding:10px 18px;border-radius:12px;opacity:0;transition:.3s;pointer-events:none}
+#toast{position:fixed;left:50%;top:84px;transform:translate(-50%,-20px);z-index:160;background:var(--ink);color:var(--paper);padding:8px 18px;border-radius:3px;opacity:0;transition:.3s;pointer-events:none;font-family:var(--serif)}
 #toast.on{opacity:1;transform:translate(-50%,0)}
-#loading{position:fixed;inset:0;display:grid;place-items:center;z-index:100;background:var(--bg);font-family:var(--serif);font-size:20px;color:var(--mute);transition:opacity .6s}
+#loading{position:fixed;inset:0;display:grid;place-items:center;z-index:180;background:#e6d3ab;font-family:var(--serif);font-style:italic;font-size:22px;color:var(--ink2);transition:opacity .6s}
 #loading.done{opacity:0;pointer-events:none}
 
 @media (max-width:800px){
-  header{padding:10px 12px;flex-wrap:wrap;gap:4px 10px}
-  .brand{font-size:18px}
-  .stats{width:100%;order:3;font-size:12px}
-  header .spacer{display:block}
+  header{padding:10px 12px;flex-wrap:wrap;gap:2px 10px}
+  .brand b{font-size:23px}.brand small{display:none}
+  header .long{display:none}
+  header .btn.primary{padding:5px 12px}
+  .stats{width:100%;order:3;font-size:14px}.stats b{font-size:16px}
   nav{position:fixed;bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:12;width:calc(100% - 20px);justify-content:space-around}
-  nav button{padding:8px 8px;flex:1}
-  #panel{top:auto;left:8px;right:8px;width:auto;height:52vh;bottom:68px;transform:translateY(130%)}
+  nav button{padding:7px 4px;flex:1;font-size:15px}
+  #panel{top:auto;left:8px;right:8px;width:auto;height:54vh;bottom:64px;transform:translateY(130%)}
   #panel.open{transform:none}
   #legend{display:none}
-  #hint{bottom:78px;font-size:12px;width:max-content;max-width:90%}
-  #jbar{bottom:72px;border-radius:20px}
-  #cap{left:10px;right:10px;width:auto;top:auto;bottom:128px}
-  #cap img{display:none}
+  #hint{bottom:70px;font-size:14px;width:max-content;max-width:92%}
+  #jbar{bottom:64px}
+  #cap{left:10px;right:10px;width:auto;top:auto;bottom:122px;padding:10px 14px}
+  #cap h3{font-size:24px}
+  #cap .ph,#cap p{display:none}
   .thumbs{grid-template-columns:repeat(3,1fr)}
 }
 </style>
 </head>
 <body>
-<div id="loading">Polishing the globe…</div>
-<canvas id="stars"></canvas>
+<div id="loading">Unrolling the old maps…</div>
+<canvas id="bg"></canvas>
 <canvas id="globe"></canvas>
 
 <header>
-  <div class="brand"><i>✦</i> Our Scratch Globe</div>
+  <div class="brand"><b>Our Scratch Globe</b><small>~ a ledger of our wanderings ~</small></div>
   <div class="stats" id="stats"></div>
   <div class="spacer"></div>
-  <button class="btn primary" id="addBtn">+ Add visit</button>
+  <button class="btn primary" id="addBtn">+ Add<span class="long"> a visit</span></button>
   <nav id="nav">
     <button data-nav="globe" class="on">Globe</button>
     <button data-nav="list">Countries</button>
     <button data-nav="timeline">Timeline</button>
-    <button data-nav="journey">▶ Journey</button>
+    <button data-nav="journey">Journey</button>
   </nav>
-  <button class="icon" id="setBtn" title="Settings, backup &amp; restore">⚙</button>
+  <button class="icon" id="setBtn" title="Settings, pins, backup &amp; restore">✒</button>
 </header>
 
 <div id="legend"></div>
-<div id="hint">Drag to spin · scroll to zoom · click a country to scratch it off</div>
+<div id="hint">Drag to spin the globe · pinch or scroll to zoom · tap a country</div>
 <div id="tip"></div>
 
 <aside id="panel">
@@ -204,7 +230,7 @@ label{display:flex;flex-direction:column;gap:5px;color:var(--mute);font-size:12p
 <div id="cap"></div>
 <div id="jbar">
   <button class="icon" id="jPrev" title="Previous stop">⏮</button>
-  <button class="icon" id="jPlay" title="Play / pause">⏸</button>
+  <button class="icon" id="jPlay" title="Play / pause">❚❚</button>
   <button class="icon" id="jNext" title="Next stop">⏭</button>
   <div id="track"></div>
   <button class="btn small" id="jSpeed" title="Speed">1×</button>
@@ -215,15 +241,15 @@ label{display:flex;flex-direction:column;gap:5px;color:var(--mute);font-size:12p
   <form id="tripForm" method="dialog">
     <h2 id="tripDlgTitle">Add a visit</h2>
     <label>Country<select id="fCountry" required></select></label>
-    <label>Place / city (optional)<input type="text" id="fPlace" placeholder="e.g. Kyoto, Lake Bled, road trip…"></label>
+    <label>Place or city (optional)<input type="text" id="fPlace" placeholder="e.g. Kyoto, Lake Bled, the coast road…"></label>
     <div class="two">
       <label>From<input type="date" id="fStart" required></label>
       <label>To (optional)<input type="date" id="fEnd"></label>
     </div>
     <label>Who went<div class="who" id="fWho"></div></label>
-    <label>Notes<textarea id="fNote" rows="4" placeholder="What do you remember? Best meal, funniest moment…"></textarea></label>
+    <label>Notes<textarea id="fNote" rows="4" placeholder="What do you want to remember? The best meal, the wrong turn, the sunset…"></textarea></label>
     <div>
-      <div class="drop" id="drop">📷 Add photos — click or drop them here<input type="file" id="fFiles" accept="image/*" multiple hidden></div>
+      <div class="drop" id="drop">Add photographs: tap here or drop them in<input type="file" id="fFiles" accept="image/*" multiple hidden></div>
       <div class="pthumbs" id="pthumbs"></div>
     </div>
     <div class="actions">
@@ -238,12 +264,18 @@ label{display:flex;flex-direction:column;gap:5px;color:var(--mute);font-size:12p
     <h2>Settings</h2>
     <div class="two">
       <label>Your name<input type="text" id="nameA" maxlength="20"></label>
-      <label>Partner's name<input type="text" id="nameB" maxlength="20"></label>
+      <label>Your partner's name<input type="text" id="nameB" maxlength="20"></label>
     </div>
-    <div class="sub">Everything is stored in this browser (IndexedDB). Back it up regularly with Export — it includes your photos.</div>
+    <div class="rule"></div>
+    <label class="toggle"><input type="checkbox" id="pinShow"> Put a pin on every scratched-off country</label>
+    <div><div class="sub" style="margin-bottom:6px">Pin style</div><div class="pins" id="gPins" data-scope="global"></div></div>
+    <div><div class="sub">Pin colour</div><div class="sw" id="gColors" data-scope="global"></div></div>
+    <div class="sub">You can give any single country its own pin from that country's page.</div>
+    <div class="rule"></div>
+    <div class="sub">Everything is kept in this browser on this device. Export a backup now and then; it includes your photographs.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button type="button" class="btn" id="expBtn">⬇ Export backup</button>
-      <button type="button" class="btn" id="impBtn">⬆ Import backup</button>
+      <button type="button" class="btn" id="expBtn">Export backup</button>
+      <button type="button" class="btn" id="impBtn">Import backup</button>
       <button type="button" class="btn danger" id="wipeBtn">Erase everything</button>
       <input type="file" id="impFile" accept="application/json" hidden>
     </div>
@@ -263,13 +295,20 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const wrap180 = d => ((d + 540) % 360) - 180;
+const wrap180 = d => ((d % 360) + 540) % 360 - 180;
 const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
 const TOTAL_COUNTRIES = 195;
-const COLORS = {both:'#ff6b81', a:'#3dd6c6', b:'#ffc857'};
+const COLORS = {both:'#a8323a', a:'#2f6f73', b:'#c08a2e'};
+const INK = '#2e1f10';
+// like a desk globe: fixed viewing angle, axis leaning 23.5°, spins only around that axis
+const VIEW_PHI = -14, AXIS_TILT = 23.5;
+const PIN_STYLES = ['pin', 'push', 'flag', 'star', 'heart', 'x', 'seal', 'compass'];
+const PIN_NAMES = {pin:'Map pin', push:'Push pin', flag:'Flag', star:'Star', heart:'Heart', x:'X marks the spot', seal:'Wax seal', compass:'Compass rose'};
+const PIN_COLORS = ['auto', '#8e2b2f', '#2b2118', '#b08d3c', '#2f5d3a', '#28466e', '#c2577a'];
 
 /* ───────────── state & storage ───────────── */
-let state = {names:{a:'Me', b:'Partner'}, trips:[]};
+const defaults = () => ({names:{a:'Me', b:'Partner'}, trips:[], pins:{show:true, style:'pin', color:'auto'}, countries:{}});
+let state = defaults();
 let db = null;
 const thumbURL = {};          // photo id -> object URL (thumbnail)
 const memPhotos = {};         // fallback if IndexedDB is unavailable
@@ -292,6 +331,10 @@ async function openDB() {
     });
   } catch (e) { db = null; toast('Storage unavailable — changes will not be saved'); }
 }
+function normalize(s) {
+  const d = defaults();
+  return {names:{...d.names, ...(s.names || {})}, trips:s.trips || [], pins:{...d.pins, ...(s.pins || {})}, countries:s.countries || {}};
+}
 const saveState = () => db ? idb('kv', 'readwrite', s => s.put(state, 'state')).catch(console.error) : null;
 async function putPhoto(id, data) {
   thumbURL[id] = URL.createObjectURL(data.thumb);
@@ -310,7 +353,7 @@ async function loadAll() {
   await openDB();
   if (!db) return;
   const s = await idb('kv', 'readonly', s => s.get('state'));
-  if (s) state = {names: {a:'Me', b:'Partner', ...s.names}, trips: s.trips || []};
+  if (s) state = normalize(s);
   const keys = await idb('photos', 'readonly', s => s.getAllKeys());
   for (const k of keys) {
     const d = await idb('photos', 'readonly', s => s.get(k));
@@ -320,7 +363,7 @@ async function loadAll() {
 
 async function processImage(file) {
   let bmp;
-  try { bmp = await createImageBitmap(file, {imageOrientation: 'from-image'}); }
+  try { bmp = await createImageBitmap(file, {imageOrientation:'from-image'}); }
   catch { bmp = await createImageBitmap(file); }
   const mk = (max, q) => {
     const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
@@ -329,16 +372,16 @@ async function processImage(file) {
     c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
     return new Promise(r => c.toBlob(r, 'image/jpeg', q));
   };
-  const out = {full: await mk(1800, .82), thumb: await mk(380, .78)};
+  const out = {full:await mk(1800, .82), thumb:await mk(380, .78)};
   bmp.close && bmp.close();
   return out;
 }
 
 /* ───────────── helpers on trips ───────────── */
-const sortedTrips = () => [...state.trips].sort((a, b) => a.start.localeCompare(b.start) || (a.created||0) - (b.created||0));
+const sortedTrips = () => [...state.trips].sort((a, b) => a.start.localeCompare(b.start) || (a.created || 0) - (b.created || 0));
 const tripsOf = name => sortedTrips().filter(t => t.country === name);
 const whoLabel = w => w === 'both' ? 'Together' : state.names[w];
-const fmtDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'}); };
+const fmtDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, {day:'numeric', month:'long', year:'numeric'}); };
 const fmtRange = t => (t.end && t.end !== t.start) ? `${fmtDate(t.start)} – ${fmtDate(t.end)}` : fmtDate(t.start);
 function countryWho(trips) {
   const s = new Set(trips.map(t => t.who));
@@ -347,14 +390,102 @@ function countryWho(trips) {
 let toastT;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
 
-/* ───────────── geo data ───────────── */
-let features = [], byName = new Map(), centroid = new Map(), areaOf = new Map();
-const sphere = {type:'Sphere'};
-const graticule = d3.geoGraticule10();
+/* the pin a country shows: its own override wins over the global setting */
+function pinFor(name, who) {
+  const o = state.countries[name] || {};
+  const style = (o.pin && o.pin !== 'default') ? o.pin : (state.pins.show ? state.pins.style : 'none');
+  let color = o.color || state.pins.color;
+  if (color === 'auto') color = COLORS[who];
+  return {style, color};
+}
 
-function prepGeo(topo) {
-  features = topojson.feature(topo, topo.objects.countries).features.filter(f => f.properties.name);
-  for (const f of features) {
+/* ───────────── pins, drawn on canvas with the tip at (x, y) ───────────── */
+function drawPin(g, style, x, y, s, col) {
+  if (style === 'none') return;
+  g.save(); g.translate(x, y); g.lineJoin = 'round'; g.lineCap = 'round';
+  g.strokeStyle = INK; g.lineWidth = Math.max(1, s * .13); g.fillStyle = col;
+  if (style !== 'x') { g.save(); g.fillStyle = 'rgba(40,25,10,.28)'; g.beginPath(); g.ellipse(s * .2, 0, s * .55, s * .2, 0, 0, 7); g.fill(); g.restore(); }
+  const star = (cx, cy, R, r, n) => { g.beginPath(); for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + i * Math.PI / n, q = i % 2 ? r : R; g.lineTo(cx + Math.cos(a) * q, cy + Math.sin(a) * q); } g.closePath(); };
+  switch (style) {
+    case 'pin':
+      g.beginPath(); g.moveTo(0, 0);
+      g.bezierCurveTo(-s * .15, -s * .7, -s * .75, -s * 1.05, -s * .75, -s * 1.6);
+      g.arc(0, -s * 1.6, s * .75, Math.PI, 0);
+      g.bezierCurveTo(s * .75, -s * 1.05, s * .15, -s * .7, 0, 0);
+      g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = '#f6ecd2'; g.beginPath(); g.arc(0, -s * 1.6, s * .28, 0, 7); g.fill();
+      break;
+    case 'push':
+      g.strokeStyle = '#6d6a62'; g.lineWidth = Math.max(1, s * .14);
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(s * .35, -s * 1.05); g.stroke();
+      g.strokeStyle = INK; g.lineWidth = Math.max(1, s * .13);
+      g.beginPath(); g.arc(s * .45, -s * 1.4, s * .62, 0, 7); g.fill(); g.stroke();
+      g.fillStyle = 'rgba(255,245,225,.6)'; g.beginPath(); g.arc(s * .25, -s * 1.6, s * .2, 0, 7); g.fill();
+      break;
+    case 'flag':
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -s * 2.3); g.stroke();
+      g.beginPath(); g.moveTo(0, -s * 2.3); g.quadraticCurveTo(s * .7, -s * 2.6, s * 1.5, -s * 2.2);
+      g.lineTo(s * 1.5, -s * 1.45); g.quadraticCurveTo(s * .7, -s * 1.85, 0, -s * 1.55); g.closePath(); g.fill(); g.stroke();
+      break;
+    case 'star': star(0, -s * .9, s * 1.05, s * .45, 5); g.fill(); g.stroke(); break;
+    case 'heart':
+      g.beginPath(); g.moveTo(0, -s * .15);
+      g.bezierCurveTo(-s * 1.2, -s * .9, -s * .75, -s * 2, 0, -s * 1.45);
+      g.bezierCurveTo(s * .75, -s * 2, s * 1.2, -s * .9, 0, -s * .15);
+      g.closePath(); g.fill(); g.stroke();
+      break;
+    case 'x':
+      g.strokeStyle = col; g.lineWidth = Math.max(2, s * .38);
+      g.beginPath(); g.moveTo(-s * .75, -s * .7); g.quadraticCurveTo(0, -s * .1, s * .75, s * .7);
+      g.moveTo(s * .75, -s * .75); g.quadraticCurveTo(-s * .1, 0, -s * .75, s * .72); g.stroke();
+      break;
+    case 'seal':
+      g.beginPath();
+      for (let i = 0; i <= 18; i++) { const a = i / 18 * Math.PI * 2, r = s * (i % 2 ? .92 : 1.02); g.lineTo(Math.cos(a) * r, -s + Math.sin(a) * r); }
+      g.closePath(); g.fill(); g.lineWidth = Math.max(1, s * .08); g.stroke();
+      g.strokeStyle = 'rgba(30,10,5,.45)'; g.beginPath(); g.arc(0, -s, s * .6, 0, 7); g.stroke();
+      g.fillStyle = 'rgba(255,235,210,.4)'; star(0, -s, s * .35, s * .15, 5); g.fill();
+      break;
+    case 'compass':
+      star(0, -s * 1.1, s * 1.15, s * .3, 4); g.fill(); g.stroke();
+      g.fillStyle = '#f6ecd2'; g.beginPath(); g.arc(0, -s * 1.1, s * .2, 0, 7); g.fill(); g.stroke();
+      break;
+  }
+  g.restore();
+}
+function paintPreviews(root) {
+  root.querySelectorAll('canvas[data-pv]').forEach(c => {
+    const d = 2; c.width = 40 * d; c.height = 40 * d;
+    const g = c.getContext('2d'); g.scale(d, d);
+    const st = c.dataset.pv;
+    drawPin(g, st, 20, st === 'x' ? 20 : 34, 8.5, c.dataset.col);
+  });
+}
+function pinButtons(current, withDefault, sampleColor) {
+  const opts = (withDefault ? [['default', 'Default'], ['none', 'None']] : []).concat(PIN_STYLES.map(s => [s, null]));
+  return opts.map(([v, txt]) =>
+    `<button type="button" class="${txt ? 'txt ' : ''}${v === current ? 'on' : ''}" data-pin="${v}" title="${txt || PIN_NAMES[v]}">${txt || `<canvas data-pv="${v}" data-col="${sampleColor}"></canvas>`}</button>`).join('');
+}
+function colorButtons(current, withDefault) {
+  const opts = (withDefault ? ['default'] : []).concat(PIN_COLORS);
+  return opts.map(c => {
+    const cls = c === 'auto' ? 'auto' : c === 'default' ? 'def' : '';
+    const title = c === 'auto' ? 'Match who went' : c === 'default' ? 'Use the default colour' : '';
+    return `<button type="button" data-color="${c}" class="${cls} ${c === current ? 'on' : ''}" ${c[0] === '#' ? `style="background:${c}"` : ''} title="${title}">${c === 'default' ? 'Default' : ''}</button>`;
+  }).join('');
+}
+
+/* ───────────── geo data ───────────── */
+let featsHi = [], featsLo = [], byName = new Map(), centroid = new Map(), areaOf = new Map();
+const sphere = {type:'Sphere'};
+const graticule = d3.geoGraticule().step([15, 15])();
+const circleOfLat = lat => d3.range(-180, 181, 3).map(l => [l, lat]);
+const equator = {type:'LineString', coordinates:circleOfLat(0)};
+const tropics = {type:'MultiLineString', coordinates:[circleOfLat(23.44), circleOfLat(-23.44)]};
+
+function prepGeo(hi, lo) {
+  const fh = topojson.feature(hi, hi.objects.countries).features.filter(f => f.properties.name);
+  for (const f of fh) {
     const n = f.properties.name;
     byName.set(n, f);
     let g = f.geometry, best = f;
@@ -365,72 +496,103 @@ function prepGeo(topo) {
     centroid.set(n, d3.geoCentroid(best));
     areaOf.set(n, d3.geoArea(best));
   }
-  features.sort((a, b) => a.properties.name.localeCompare(b.properties.name));
+  fh.sort((a, b) => a.properties.name.localeCompare(b.properties.name));
+  featsHi = fh.map(f => ({name:f.properties.name, geo:f}));
+  // fast set for drawing: 110m outlines, plus the tiny countries that only exist at 50m
+  const fl = topojson.feature(lo, lo.objects.countries).features.filter(f => f.properties.name);
+  const have = new Set(fl.map(f => f.properties.name));
+  featsLo = fl.map(f => ({name:f.properties.name, geo:f})).concat(featsHi.filter(x => !have.has(x.name)));
 }
 
 /* ───────────── canvas / camera ───────────── */
 const gc = $('#globe'), ctx = gc.getContext('2d');
-const sc = $('#stars'), sctx = sc.getContext('2d');
+const bc = $('#bg'), bctx = bc.getContext('2d');
 let W, H, dpr;
-const cam = {rot:[-10, -20], zoom:1, target:null};
+const cam = {lam:-15, zoom:1, pan:[0, 0], vel:0, target:null};
 const view = {cx:0, cy:0, r:300};
-const proj = d3.geoOrthographic().clipAngle(90).precision(.5);
+const proj = d3.geoOrthographic().clipAngle(90).precision(.7);
+const unit = d3.geoOrthographic().clipAngle(90).scale(1).translate([0, 0]);
 const path = d3.geoPath(proj, ctx);
-let foil, autoRotate = true, lastInteract = performance.now();
+let autoRotate = true, needDraw = true;
 let panelOpen = false, mode = 'list', prevMode = 'list', sel = null, hover = null;
+const invalidate = () => { needDraw = true; };
 
-function drawStars() {
-  sc.width = W * dpr; sc.height = H * dpr;
-  sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  for (let i = 0; i < 220; i++) {
-    const x = rnd() * W, y = rnd() * H, r = rnd() * 1.2 + .2;
-    sctx.fillStyle = `rgba(255,255,255,${.2 + rnd() * .6})`;
-    sctx.beginPath(); sctx.arc(x, y, r, 0, 7); sctx.fill();
+function drawBg() {
+  bc.width = W * dpr; bc.height = H * dpr;
+  const g = bctx; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = '#e8d6ae'; g.fillRect(0, 0, W, H);
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  // tea stains & foxing
+  for (let i = 0; i < 70; i++) {
+    const x = rnd() * W, y = rnd() * H, r = 20 + rnd() * 170;
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(${rnd() < .5 ? '150,100,45' : '250,240,215'},${.05 + rnd() * .07})`); gr.addColorStop(1, 'rgba(150,100,45,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
   }
+  // rhumb lines from two compass roses, like an old portolan chart
+  const roses = [[W * .86, H * .8, Math.min(W, H) * .15], [W * .1, H * .22, Math.min(W, H) * .08]];
+  g.lineWidth = .7;
+  for (const [x, y] of roses) for (let i = 0; i < 32; i++) {
+    const a = i / 32 * Math.PI * 2;
+    g.strokeStyle = i % 4 ? 'rgba(110,75,35,.08)' : 'rgba(142,43,47,.13)';
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * 3000, y + Math.sin(a) * 3000); g.stroke();
+  }
+  for (const [x, y, R] of roses) {
+    g.save(); g.translate(x, y); g.globalAlpha = .28;
+    g.strokeStyle = '#5a3d1e'; g.lineWidth = 1;
+    for (const k of [1, .92, .4]) { g.beginPath(); g.arc(0, 0, R * k, 0, 7); g.stroke(); }
+    for (let i = 0; i < 64; i++) { const a = i / 64 * Math.PI * 2, l = i % 8 ? .96 : .88; g.beginPath(); g.moveTo(Math.cos(a) * R * l, Math.sin(a) * R * l); g.lineTo(Math.cos(a) * R * .92, Math.sin(a) * R * .92); g.stroke(); }
+    for (const [n, len, w] of [[8, .55, .07], [4, .9, .12]]) for (let i = 0; i < n; i++) {
+      const a = i / n * Math.PI * 2 + (n === 8 ? Math.PI / 8 : 0) - Math.PI / 2;
+      for (const side of [-1, 1]) {
+        g.fillStyle = side < 0 ? '#5a3d1e' : '#e9d9b4';
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a) * R * len, Math.sin(a) * R * len);
+        g.lineTo(Math.cos(a + side * Math.PI / 2) * R * w, Math.sin(a + side * Math.PI / 2) * R * w); g.closePath(); g.fill(); g.stroke();
+      }
+    }
+    g.fillStyle = '#5a3d1e'; g.font = `${R * .2}px "IM Fell English SC",Georgia,serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('N', 0, -R * 1.08);
+    g.restore();
+  }
+  // burnt edges
+  const v = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.hypot(W, H) * .62);
+  v.addColorStop(0, 'rgba(120,75,30,0)'); v.addColorStop(.75, 'rgba(120,75,30,.22)'); v.addColorStop(1, 'rgba(70,40,15,.6)');
+  g.fillStyle = v; g.fillRect(0, 0, W, H);
 }
 function resize() {
-  dpr = Math.min(window.devicePixelRatio || 1, 2);
   W = innerWidth; H = innerHeight;
-  for (const c of [gc, sc]) { c.width = W * dpr; c.height = H * dpr; }
-  drawStars();
-  const t = targetView(); Object.assign(view, t);
+  dpr = Math.min(window.devicePixelRatio || 1, W <= 800 ? 1.75 : 2);
+  gc.width = W * dpr; gc.height = H * dpr;
+  drawBg();
+  Object.assign(view, targetView());
+  invalidate();
 }
 addEventListener('resize', resize);
-
-function makeFoil() {
-  const s = 256, c = document.createElement('canvas'); c.width = c.height = s;
-  const g = c.getContext('2d');
-  g.fillStyle = '#a2aabb'; g.fillRect(0, 0, s, s);
-  const img = g.getImageData(0, 0, s, s), d = img.data;
-  for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - .5) * 16; d[i] += n; d[i+1] += n; d[i+2] += n; }
-  g.putImageData(img, 0, 0);
-  g.lineWidth = 1;
-  for (let i = 0; i < 420; i++) {
-    g.strokeStyle = Math.random() < .5 ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.1)';
-    const l = 10 + Math.random() * 50, x = Math.random() * (s - l - 4), y = 4 + Math.random() * (s - 8);
-    g.beginPath(); g.moveTo(x, y); g.lineTo(x + l, y + (Math.random() - .5) * 8); g.stroke();
-  }
-  return ctx.createPattern(c, 'repeat');
-}
+if (document.fonts) document.fonts.ready.then(() => { if (W) drawBg(); });
 
 function targetView() {
   const mobile = W <= 800;
-  let left = 0, right = W, top = mobile ? 90 : 64, bottom = H;
-  if (mobile) bottom -= 70;
-  if (panelOpen) { if (mobile) bottom -= H * .52 + 0; else right -= 440; }
-  if (J.active) bottom -= mobile ? 150 : 80;
+  let left = 0, right = W, top = mobile ? 86 : 74, bottom = H;
+  if (mobile) bottom -= 62;
+  if (panelOpen) { if (mobile) bottom -= H * .54 + 4; else right -= 430; }
+  if (J.active) bottom -= mobile ? 150 : 70;
   const w = right - left, h = bottom - top;
-  return {cx:(left + right) / 2, cy:(top + bottom) / 2, r:Math.max(70, Math.min(w, h) * .47)};
+  const r = Math.max(60, Math.min(w * .44, h / 2.75));   // leave room for the ring and wooden stand
+  return {cx:(left + right) / 2, cy:top + h / 2 - r * .13, r};
 }
 
+// when zoomed in, the view slides so the subject is centred; at normal zoom the globe sits on its stand
+const panFactor = () => clamp((cam.zoom - 1) / .8, 0, 1);
 function setProj() {
-  proj.rotate(cam.rot).translate([view.cx, view.cy]).scale(view.r * cam.zoom);
+  const R = view.r * cam.zoom, f = panFactor();
+  proj.rotate([cam.lam, VIEW_PHI, AXIS_TILT]).scale(R).translate([view.cx + cam.pan[0] * R * f, view.cy + cam.pan[1] * R * f]);
+  return R;
 }
-const centerLL = () => [-cam.rot[0], -cam.rot[1]];
-const visible = ll => d3.geoDistance(ll, centerLL()) < Math.PI / 2 - .02;
+// pan (in globe radii) that brings a point to the middle of the view at a given spin
+function panFor(ll, lam) { const p = unit.rotate([lam, VIEW_PHI, AXIS_TILT])(ll); return [-p[0], -p[1]]; }
+const centerLL = () => [-cam.lam, -VIEW_PHI];
+const visible = ll => d3.geoDistance(ll, centerLL()) < Math.PI / 2 - .03;
 
-/* which countries are scratched (honours journey progress) */
 function scratched() {
   const m = new Map();
   const list = J.active ? J.stops.slice(0, J.shown).map(s => s.trip) : state.trips;
@@ -443,144 +605,206 @@ function scratched() {
 let lastT = performance.now();
 function frame(now) {
   const dt = Math.min(64, now - lastT); lastT = now;
-  // smooth view rect
+  let moving = false;
   const tv = targetView(), k = 1 - Math.exp(-dt / 140);
-  view.cx += (tv.cx - view.cx) * k; view.cy += (tv.cy - view.cy) * k; view.r += (tv.r - view.r) * k;
-
-  if (J.active) stepJourney(dt);
-  else if (cam.target) {
-    const kk = 1 - Math.exp(-dt / 160), t = cam.target;
-    cam.rot[0] += wrap180(t.rot[0] - cam.rot[0]) * kk;
-    cam.rot[1] += (t.rot[1] - cam.rot[1]) * kk;
-    cam.zoom += (t.zoom - cam.zoom) * kk;
-    if (Math.abs(wrap180(t.rot[0] - cam.rot[0])) < .05 && Math.abs(t.rot[1] - cam.rot[1]) < .05) cam.target = null;
-  } else if (autoRotate && !panelOpen && now - lastInteract > 2500) {
-    cam.rot[0] -= dt * .008;
+  for (const key of ['cx', 'cy', 'r']) {
+    const d = tv[key] - view[key];
+    if (Math.abs(d) > .3) { view[key] += d * k; moving = true; } else view[key] = tv[key];
   }
-  draw(now);
+  if (J.active) { stepJourney(dt); moving = true; }
+  else {
+    if (cam.target) {
+      const kk = 1 - Math.exp(-dt / 170), t = cam.target;
+      const dl = wrap180(t.lam - cam.lam);
+      cam.lam += dl * kk; cam.zoom += (t.zoom - cam.zoom) * kk;
+      cam.pan[0] += (t.pan[0] - cam.pan[0]) * kk; cam.pan[1] += (t.pan[1] - cam.pan[1]) * kk;
+      if (Math.abs(dl) < .03 && Math.abs(t.zoom - cam.zoom) < .003) cam.target = null;
+      moving = true;
+    }
+    if (Math.abs(cam.vel) > .0006 && !drag) { cam.lam += cam.vel * dt; cam.vel *= Math.exp(-dt / 500); moving = true; }
+    if (autoRotate && !panelOpen && !drag) { cam.lam += dt * .005; moving = true; }
+  }
+  // only repaint when something actually changed — keeps phones cool and smooth
+  if (moving || needDraw) { draw(now); needDraw = false; }
   requestAnimationFrame(frame);
 }
 
 function draw(now) {
-  setProj();
-  const {cx, cy} = view, r = view.r * cam.zoom;
+  const R = setProj();
+  const [gx, gy] = proj.translate();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
+  const feats = R > 850 ? featsHi : featsLo;
 
-  // atmosphere
-  let g = ctx.createRadialGradient(cx, cy, r * .97, cx, cy, r * 1.28);
-  g.addColorStop(0, 'rgba(110,170,255,.42)'); g.addColorStop(.35, 'rgba(120,110,255,.14)'); g.addColorStop(1, 'rgba(100,100,255,0)');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r * 1.28, 0, 7); ctx.fill();
+  drawStand(gx, gy, R);
 
-  // ocean
-  g = ctx.createRadialGradient(cx - r * .35, cy - r * .4, r * .05, cx, cy, r);
-  g.addColorStop(0, '#2a62a8'); g.addColorStop(.55, '#12306a'); g.addColorStop(1, '#070f2e');
+  // the sea: aged, varnished
+  let g = ctx.createRadialGradient(gx - R * .35, gy - R * .4, R * .05, gx, gy, R);
+  g.addColorStop(0, '#d5dcc0'); g.addColorStop(.55, '#a9b9a0'); g.addColorStop(1, '#6f8273');
   ctx.fillStyle = g; ctx.beginPath(); path(sphere); ctx.fill();
 
-  ctx.beginPath(); path(graticule); ctx.strokeStyle = 'rgba(190,215,255,.09)'; ctx.lineWidth = .6; ctx.stroke();
+  ctx.beginPath(); path(graticule); ctx.strokeStyle = 'rgba(80,55,30,.22)'; ctx.lineWidth = .6; ctx.stroke();
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); path(tropics); ctx.strokeStyle = 'rgba(80,55,30,.35)'; ctx.lineWidth = .7; ctx.stroke();
+  ctx.beginPath(); path(equator); ctx.strokeStyle = 'rgba(142,43,47,.6)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.setLineDash([]);
 
-  // land: foil for unscratched
+  // uncharted land: plain parchment, all in one path
   const sx = scratched();
-  foil = foil || makeFoil();
   ctx.beginPath();
-  for (const f of features) if (!sx.has(f.properties.name)) path(f);
-  ctx.fillStyle = foil; ctx.fill();
-  ctx.strokeStyle = 'rgba(25,32,58,.75)'; ctx.lineWidth = .5; ctx.stroke();
+  for (const f of feats) if (!sx.has(f.name)) path(f.geo);
+  ctx.fillStyle = '#efe0bb'; ctx.fill();
+  ctx.strokeStyle = 'rgba(70,45,20,.7)'; ctx.lineWidth = .55; ctx.stroke();
 
-  // scratched countries
-  for (const [name, who] of sx) {
-    const f = byName.get(name); if (!f) continue;
-    const col = COLORS[who];
-    ctx.save();
-    ctx.shadowColor = col; ctx.shadowBlur = 16;
-    ctx.fillStyle = col; ctx.beginPath(); path(f); ctx.fill();
-    ctx.restore();
-    ctx.globalAlpha = .22; ctx.fillStyle = foil; ctx.beginPath(); path(f); ctx.fill(); ctx.globalAlpha = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = .7; ctx.stroke();
+  // scratched-off countries: hand-tinted watercolour
+  for (const f of feats) {
+    const who = sx.get(f.name); if (!who) continue;
+    ctx.beginPath(); path(f.geo);
+    ctx.globalAlpha = .85; ctx.fillStyle = COLORS[who]; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(40,20,8,.75)'; ctx.lineWidth = .8; ctx.stroke();
   }
 
-  // hover / selection
-  for (const [name, w, col] of [[hover, 1.5, 'rgba(255,255,255,.9)'], [sel, 2.2, '#fff']]) {
+  for (const [name, w] of [[hover, 1.4], [sel, 2.2]]) {
     const f = name && byName.get(name); if (!f) continue;
-    ctx.beginPath(); path(f); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.stroke();
+    ctx.beginPath(); path(f); ctx.strokeStyle = INK; ctx.lineWidth = w; ctx.stroke();
   }
 
-  // sphere shading
-  g = ctx.createRadialGradient(cx - r * .4, cy - r * .45, r * .1, cx, cy, r * 1.02);
-  g.addColorStop(0, 'rgba(255,255,255,.14)'); g.addColorStop(.45, 'rgba(255,255,255,0)'); g.addColorStop(.8, 'rgba(0,5,25,.25)'); g.addColorStop(1, 'rgba(0,5,25,.65)');
+  // old varnish: yellowed highlight, darkened rim
+  g = ctx.createRadialGradient(gx - R * .38, gy - R * .42, R * .05, gx, gy, R * 1.01);
+  g.addColorStop(0, 'rgba(255,248,220,.38)'); g.addColorStop(.4, 'rgba(240,215,150,.06)'); g.addColorStop(.82, 'rgba(110,70,25,.2)'); g.addColorStop(1, 'rgba(60,35,10,.6)');
   ctx.fillStyle = g; ctx.beginPath(); path(sphere); ctx.fill();
-  ctx.strokeStyle = 'rgba(160,200,255,.35)'; ctx.lineWidth = 1; ctx.beginPath(); path(sphere); ctx.stroke();
 
-  if (J.active) drawJourney(now); else drawPins(sx, now);
+  drawRing(gx, gy, R);
+
+  if (J.active) drawJourney(now); else drawPins(sx);
 }
 
-function drawPins(sx, now) {
-  for (const [name, who] of sx) {
-    const c = centroid.get(name); if (!c || !visible(c)) continue;
-    const [x, y] = proj(c);
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, 3.2, 0, 7); ctx.fill();
-    ctx.strokeStyle = COLORS[who]; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 6, 0, 7); ctx.stroke();
+function drawStand(gx, gy, R) {
+  const top = gy + R * 1.08, baseY = gy + R * 1.36;
+  if (top > H + 20) return;
+  let g = ctx.createLinearGradient(gx - R * .1, 0, gx + R * .1, 0);
+  g.addColorStop(0, '#4a2c14'); g.addColorStop(.45, '#9a6a3a'); g.addColorStop(1, '#3e2410');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(gx - R * .035, top); ctx.lineTo(gx + R * .035, top);
+  ctx.quadraticCurveTo(gx + R * .03, baseY - R * .12, gx + R * .1, baseY - R * .02);
+  ctx.lineTo(gx - R * .1, baseY - R * .02);
+  ctx.quadraticCurveTo(gx - R * .03, baseY - R * .12, gx - R * .035, top); ctx.fill();
+  ctx.fillStyle = '#3a210d'; ctx.beginPath(); ctx.ellipse(gx, baseY + R * .045, R * .46, R * .085, 0, 0, 7); ctx.fill();
+  g = ctx.createLinearGradient(gx - R * .46, 0, gx + R * .46, 0);
+  g.addColorStop(0, '#5a361a'); g.addColorStop(.4, '#a87443'); g.addColorStop(1, '#4a2b12');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(gx, baseY, R * .46, R * .08, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(30,15,5,.5)'; ctx.lineWidth = 1; ctx.stroke();
+}
+function drawRing(gx, gy, R) {
+  const rr = R * 1.05, w = Math.max(3, R * .032);
+  // the axis direction on screen, from the projected north pole
+  const np = unit.rotate([cam.lam, VIEW_PHI, AXIS_TILT])([0, 90]);
+  const a = Math.atan2(np[1], np[0]);
+  const g = ctx.createLinearGradient(gx - rr, gy - rr, gx + rr, gy + rr);
+  g.addColorStop(0, '#e8cf85'); g.addColorStop(.35, '#a8822f'); g.addColorStop(.6, '#d9bb6a'); g.addColorStop(1, '#7a5a1c');
+  ctx.strokeStyle = g; ctx.lineWidth = w;
+  ctx.beginPath(); ctx.arc(gx, gy, rr, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(60,40,10,.55)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(gx, gy, rr + w / 2, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(gx, gy, rr - w / 2, 0, Math.PI * 2); ctx.stroke();
+  // engraved degree marks
+  ctx.strokeStyle = 'rgba(60,40,10,.6)'; ctx.beginPath();
+  for (let i = 0; i < 72; i++) {
+    const t = a + i / 72 * Math.PI * 2, l = i % 3 ? .35 : .75;
+    ctx.moveTo(gx + Math.cos(t) * (rr - w * l / 2), gy + Math.sin(t) * (rr - w * l / 2));
+    ctx.lineTo(gx + Math.cos(t) * (rr + w * l / 2), gy + Math.sin(t) * (rr + w * l / 2));
+  }
+  ctx.stroke();
+  // pivots where the axis meets the ring
+  for (const t of [a, a + Math.PI]) {
+    ctx.fillStyle = '#c9a756'; ctx.strokeStyle = '#5a4012';
+    ctx.beginPath(); ctx.arc(gx + Math.cos(t) * rr, gy + Math.sin(t) * rr, w * .9, 0, 7); ctx.fill(); ctx.stroke();
   }
 }
 
-/* ───────────── interaction ───────────── */
+function drawPins(sx) {
+  const s = clamp(7 * Math.sqrt(cam.zoom), 7, 13);
+  const list = [];
+  for (const [name, who] of sx) {
+    const p = pinFor(name, who); if (p.style === 'none') continue;
+    const c = centroid.get(name); if (!c || !visible(c)) continue;
+    const xy = proj(c); list.push([xy[0], xy[1], p]);
+  }
+  list.sort((a, b) => a[1] - b[1]);
+  for (const [x, y, p] of list) drawPin(ctx, p.style, x, y, s, p.color);
+}
+
+/* ───────────── interaction: the globe spins only around its axis ───────────── */
 const ptrs = new Map(); let drag = null, pinchD = 0;
-const interact = () => { lastInteract = performance.now(); };
 function pick(x, y) {
-  setProj();
+  const R = setProj(); const [tx, ty] = proj.translate();
+  if (Math.hypot(x - tx, y - ty) > R) return null;
   const ll = proj.invert([x, y]);
-  if (!ll || d3.geoDistance(ll, centerLL()) > Math.PI / 2) return null;
-  if (Math.hypot(x - view.cx, y - view.cy) > view.r * cam.zoom) return null;
-  for (const f of features) if (d3.geoContains(f, ll)) return f.properties.name;
+  if (!ll) return null;
+  for (const f of featsHi) if (d3.geoContains(f.geo, ll)) return f.name;
   return null;
 }
 gc.addEventListener('pointerdown', e => {
-  gc.setPointerCapture(e.pointerId);
+  try { gc.setPointerCapture(e.pointerId); } catch {}
   ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
-  drag = {x:e.clientX, y:e.clientY, moved:0};
+  drag = {moved:0, t:performance.now(), v:0};
   if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
-  if (!J.active) { cam.target = null; autoRotate = false; }
-  interact();
+  if (!J.active) { cam.target = null; cam.vel = 0; autoRotate = false; }
 });
 gc.addEventListener('pointermove', e => {
   const p = ptrs.get(e.pointerId);
   if (p) {
     const dx = e.clientX - p.x, dy = e.clientY - p.y;
     p.x = e.clientX; p.y = e.clientY;
-    if (J.active) return;
+    if (J.active || !drag) return;
     if (ptrs.size === 2) {
       const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-      cam.zoom = clamp(cam.zoom * d / pinchD, .6, 8); pinchD = d; drag.moved = 99;
-    } else if (drag) {
+      if (pinchD) setZoom(cam.zoom * d / pinchD);
+      pinchD = d; drag.moved = 99;
+    } else {
       drag.moved += Math.abs(dx) + Math.abs(dy);
-      const s = 57.3 / (view.r * cam.zoom);
-      cam.rot[0] += dx * s; cam.rot[1] = clamp(cam.rot[1] - dy * s, -90, 90);
+      const R = view.r * cam.zoom, now = performance.now();
+      const dl = dx * 57.3 / R;            // sideways drag turns the globe on its axis
+      cam.lam += dl;
+      const f = panFactor();               // up/down drag only slides the view when zoomed in
+      if (f > 0) cam.pan[1] = clamp(cam.pan[1] + dy / (R * Math.max(f, .25)), -1.1, 1.1);
+      const dtm = Math.max(1, now - drag.t); drag.v = drag.v * .5 + (dl / dtm) * .5; drag.t = now;
       gc.classList.add('drag');
     }
-    interact();
-  } else {
+    invalidate();
+  } else if (e.pointerType === 'mouse') {
     hoverPending = {x:e.clientX, y:e.clientY};
   }
 });
 const endPtr = e => {
   const was = drag;
   ptrs.delete(e.pointerId); gc.classList.remove('drag');
-  if (was && was.moved < 6 && ptrs.size === 0 && e.type === 'pointerup' && !J.active) clickAt(e.clientX, e.clientY);
+  if (ptrs.size < 2) pinchD = 0;
+  if (was && ptrs.size === 0) {
+    if (was.moved < 6 && e.type === 'pointerup' && !J.active) clickAt(e.clientX, e.clientY);
+    else if (!J.active && performance.now() - was.t < 80) cam.vel = clamp(was.v, -.6, .6);  // let it keep spinning
+  }
   if (ptrs.size === 0) drag = null;
 };
 gc.addEventListener('pointerup', endPtr); gc.addEventListener('pointercancel', endPtr);
+function setZoom(z) {
+  const old = cam.zoom; cam.zoom = clamp(z, .7, 8);
+  if (cam.zoom < old && cam.zoom < 1.4) { cam.pan[0] *= .85; cam.pan[1] *= .85; }
+  invalidate();
+}
 gc.addEventListener('wheel', e => {
   e.preventDefault(); if (J.active) return;
-  cam.target = null; autoRotate = false; interact();
-  cam.zoom = clamp(cam.zoom * Math.exp(-e.deltaY * .0012), .6, 8);
+  cam.target = null; autoRotate = false;
+  setZoom(cam.zoom * Math.exp(-e.deltaY * .0012));
 }, {passive:false});
-gc.addEventListener('pointerleave', () => { hoverPending = null; hover = null; $('#tip').style.opacity = 0; });
+gc.addEventListener('pointerleave', () => { hoverPending = null; if (hover) { hover = null; invalidate(); } $('#tip').style.opacity = 0; });
 
 let hoverPending = null;
 setInterval(() => {
   if (!hoverPending || J.active || drag) return;
   const {x, y} = hoverPending; hoverPending = null;
-  hover = pick(x, y);
+  const h = pick(x, y);
+  if (h !== hover) { hover = h; invalidate(); }
   const tip = $('#tip');
   gc.classList.toggle('hover', !!hover);
   if (hover) {
@@ -588,13 +812,14 @@ setInterval(() => {
     tip.textContent = hover + (n ? `  ·  ${n} visit${n > 1 ? 's' : ''}` : '');
     tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.style.opacity = 1;
   } else tip.style.opacity = 0;
-}, 50);
+}, 60);
 
 function flyTo(name) {
   const c = centroid.get(name); if (!c) return;
   const a = areaOf.get(name) || .01;
-  cam.target = {rot:[-c[0], -c[1]], zoom:clamp(.17 / Math.sqrt(a), 1.1, 5)};
-  autoRotate = false;
+  const lam = -c[0];
+  cam.target = {lam, zoom:clamp(.17 / Math.sqrt(a), 1.25, 5), pan:panFor(c, lam)};
+  cam.vel = 0; autoRotate = false;
 }
 function clickAt(x, y) {
   const n = pick(x, y);
@@ -603,15 +828,15 @@ function clickAt(x, y) {
 }
 function selectCountry(n) {
   if (mode !== 'country') prevMode = panelOpen ? mode : 'globe';
-  sel = n; mode = 'country'; openPanel(); flyTo(n);
+  sel = n; mode = 'country'; openPanel(); flyTo(n); invalidate();
 }
 
 /* ───────────── panel ───────────── */
 function openPanel() { panelOpen = true; $('#panel').classList.add('open'); renderPanel(); syncNav(); }
-function closePanel() { panelOpen = false; sel = null; $('#panel').classList.remove('open'); syncNav(); }
-function setMode(m) { mode = m; sel = null; openPanel(); }
+function closePanel() { panelOpen = false; sel = null; $('#panel').classList.remove('open'); syncNav(); invalidate(); }
+function setMode(m) { mode = m; sel = null; openPanel(); invalidate(); }
 function syncNav() {
-  const cur = J.active ? 'journey' : (!panelOpen ? 'globe' : (mode === 'country' ? (prevMode === 'timeline' ? 'timeline' : prevMode === 'list' ? 'list' : 'globe') : mode));
+  const cur = J.active ? 'journey' : (!panelOpen ? 'globe' : (mode === 'country' ? prevMode : mode));
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.nav === cur));
 }
 $('#nav').addEventListener('click', e => {
@@ -620,22 +845,26 @@ $('#nav').addEventListener('click', e => {
   if (n !== 'journey' && J.active) exitJourney();
   if (n === 'globe') closePanel();
   else if (n === 'journey') startJourney();
-  else { setMode(n); }
+  else setMode(n);
 });
 $('#closeBtn').onclick = closePanel;
-$('#backBtn').onclick = () => { if (prevMode === 'globe') closePanel(); else { mode = prevMode; sel = null; renderPanel(); syncNav(); } };
+$('#backBtn').onclick = () => { if (prevMode === 'globe') closePanel(); else { mode = prevMode; sel = null; renderPanel(); syncNav(); invalidate(); } };
 
 let listFilter = 'visited', listQuery = '';
-function whoChip(w) { return `<span class="chip"><i class="dot ${w}"></i>${esc(whoLabel(w))}</span>`; }
+const whoChip = w => `<span class="chip"><i class="dot ${w}"></i>${esc(whoLabel(w))}</span>`;
 
 function tripCard(t, opts = {}) {
   const photos = t.photos || [];
   const shown = photos.slice(0, 8);
   const thumbs = photos.length ? `<div class="thumbs">${shown.map((id, i) =>
     `<button data-act="photo" data-id="${t.id}" data-i="${i}"><img src="${thumbURL[id] || ''}" alt="">${(i === 7 && photos.length > 8) ? `<span class="more">+${photos.length - 7}</span>` : ''}</button>`).join('')}</div>` : '';
+  const head = opts.showCountry
+    ? `<span class="link" data-act="country" data-c="${esc(t.country)}">${esc(t.country)}</span>${t.place ? ', ' + esc(t.place) : ''}`
+    : (esc(t.place) || fmtRange(t));
+  const meta = (opts.showCountry || t.place) ? fmtRange(t) + ' ·' : '';
   return `<div class="card item" style="--c:${COLORS[t.who]}">
-    <h4>${opts.showCountry ? `<span class="link" data-act="country" data-c="${esc(t.country)}">${esc(t.country)}</span>${t.place ? ' · ' + esc(t.place) : ''}` : (esc(t.place) || fmtRange(t))}</h4>
-    <div class="meta">${(opts.showCountry || !t.place) ? '' : fmtRange(t) + ' ·'}${opts.showCountry ? fmtRange(t) : ''} ${whoChip(t.who)}</div>
+    <h4>${head}</h4>
+    <div class="meta">${meta} ${whoChip(t.who)}</div>
     ${t.note ? `<p>${esc(t.note)}</p>` : ''}${thumbs}
     <div class="acts"><button class="btn small" data-act="edit" data-id="${t.id}">Edit</button><button class="btn small danger" data-act="del" data-id="${t.id}">Delete</button></div>
   </div>`;
@@ -647,11 +876,21 @@ function renderPanel() {
   if (mode === 'country') {
     title.textContent = sel;
     const ts = tripsOf(sel);
-    body.innerHTML = ts.length
-      ? `<div class="sub">${ts.length} visit${ts.length > 1 ? 's' : ''} · ${ts.reduce((n, t) => n + (t.photos||[]).length, 0)} photos</div>` +
-        ts.map(t => tripCard(t)).join('') +
-        `<button class="btn" style="width:100%;margin-top:6px" data-act="add" data-c="${esc(sel)}">+ Another visit to ${esc(sel)}</button>`
-      : `<div class="empty">Not scratched off yet.<br><br><button class="btn primary" data-act="add" data-c="${esc(sel)}">Scratch it off — add a visit</button></div>`;
+    if (!ts.length) {
+      body.innerHTML = `<div class="empty">Still uncharted.<br><br><button class="btn primary" data-act="add" data-c="${esc(sel)}">Scratch it off: add a visit</button></div>`;
+      return;
+    }
+    const o = state.countries[sel] || {};
+    const p = pinFor(sel, countryWho(ts));
+    body.innerHTML = `<div class="sub">${ts.length} visit${ts.length > 1 ? 's' : ''} · ${ts.reduce((n, t) => n + (t.photos || []).length, 0)} photographs</div>` +
+      ts.map(t => tripCard(t)).join('') +
+      `<button class="btn" style="width:100%;margin-top:4px" data-act="add" data-c="${esc(sel)}">+ Another visit to ${esc(sel)}</button>
+      <div class="rule"></div>
+      <div class="pinbox"><h5>Pin for ${esc(sel)}</h5>
+        <div class="pins" data-scope="country">${pinButtons(o.pin || 'default', true, p.color)}</div>
+        <div class="sw" data-scope="country">${colorButtons(o.color || 'default', true)}</div>
+      </div>`;
+    paintPreviews(body);
   } else if (mode === 'list') {
     title.textContent = 'Countries';
     const n = new Set(state.trips.map(t => t.country)).size;
@@ -664,7 +903,7 @@ function renderPanel() {
   } else {
     title.textContent = 'Timeline';
     const ts = sortedTrips();
-    if (!ts.length) { body.innerHTML = `<div class="empty">Your story starts here.<br>Add your first trip and it will appear on the timeline.</div>`; return; }
+    if (!ts.length) { body.innerHTML = `<div class="empty">Every story needs a first chapter.<br>Add a trip and it will appear here.</div>`; return; }
     let html = '<div class="tl">', year = '';
     for (const t of ts) {
       const y = t.start.slice(0, 4);
@@ -678,19 +917,27 @@ function renderList() {
   const el = $('#listItems'); if (!el) return;
   const q = listQuery.trim().toLowerCase();
   const visited = new Set(state.trips.map(t => t.country));
-  let names = features.map(f => f.properties.name).filter(n => (listFilter === 'all' || visited.has(n)) && n.toLowerCase().includes(q));
+  const names = featsHi.map(f => f.name).filter(n => (listFilter === 'all' || visited.has(n)) && n.toLowerCase().includes(q));
   if (listFilter === 'all') names.sort((a, b) => (visited.has(b) - visited.has(a)) || a.localeCompare(b));
-  if (!names.length) { el.innerHTML = `<div class="empty">${listFilter === 'visited' && !q ? 'Nothing scratched off yet — click a country on the globe, or hit “+ Add visit”.' : 'No matches.'}</div>`; return; }
+  if (!names.length) { el.innerHTML = `<div class="empty">${listFilter === 'visited' && !q ? 'Nothing scratched off yet. Tap a country on the globe, or use “+ Add a visit”.' : 'No matches.'}</div>`; return; }
   el.innerHTML = names.map(n => {
     const ts = tripsOf(n), last = ts[ts.length - 1];
     const w = ts.length ? countryWho(ts) : '';
-    return `<div class="row" data-act="country" data-c="${esc(n)}"><i class="dot ${w}"></i><div class="nm"><b>${esc(n)}</b><small>${ts.length ? `${ts.length} visit${ts.length > 1 ? 's' : ''} · last ${fmtDate(last.start)}` : 'Not visited'}</small></div><span class="sub">›</span></div>`;
+    return `<div class="row" data-act="country" data-c="${esc(n)}"><i class="dot ${w}"></i><div class="nm"><b>${esc(n)}</b><small>${ts.length ? `${ts.length} visit${ts.length > 1 ? 's' : ''} · last ${fmtDate(last.start)}` : 'Uncharted'}</small></div><span class="sub">›</span></div>`;
   }).join('');
 }
 $('#panelBody').addEventListener('input', e => { if (e.target.id === 'q') { listQuery = e.target.value; renderList(); } });
 $('#panelBody').addEventListener('click', e => {
   const f = e.target.closest('[data-f]');
   if (f) { listFilter = f.dataset.f; renderPanel(); return; }
+  const pb = e.target.closest('[data-pin],[data-color]');
+  if (pb && pb.parentElement.dataset.scope === 'country') {
+    const o = state.countries[sel] = state.countries[sel] || {};
+    if (pb.dataset.pin) o.pin = pb.dataset.pin;
+    else if (pb.dataset.color === 'default') delete o.color; else o.color = pb.dataset.color;
+    if ((!o.pin || o.pin === 'default') && !o.color) delete state.countries[sel];
+    saveState(); renderPanel(); invalidate(); return;
+  }
   const a = e.target.closest('[data-act]'); if (!a) return;
   const act = a.dataset.act, id = a.dataset.id, c = a.dataset.c;
   if (act === 'country') selectCountry(c);
@@ -710,14 +957,15 @@ async function deleteTrip(id) {
 function refresh() {
   updateStats(); updateLegend(); if (panelOpen) renderPanel();
   $('#hint').classList.toggle('hide', state.trips.length > 0 || J.active);
+  invalidate();
 }
 function updateStats() {
   const n = new Set(state.trips.map(t => t.country)).size;
   const p = state.trips.reduce((s, t) => s + (t.photos || []).length, 0);
-  $('#stats').innerHTML = `<b>${n}</b> countries<span class="dotsep">·</span><b>${Math.round(n / TOTAL_COUNTRIES * 100)}%</b> of the world<span class="dotsep">·</span><b>${state.trips.length}</b> trips<span class="dotsep">·</span><b>${p}</b> photos`;
+  $('#stats').innerHTML = `<b>${n}</b> countries<span class="sep">·</span><b>${Math.round(n / TOTAL_COUNTRIES * 100)}%</b> of the world<span class="sep">·</span><b>${state.trips.length}</b> trips<span class="sep">·</span><b>${p}</b> photographs`;
 }
 function updateLegend() {
-  $('#legend').innerHTML = ['both', 'a', 'b'].map(w => `<span><i style="background:${COLORS[w]}"></i>${esc(whoLabel(w))}</span>`).join('') + `<span><i style="background:#9aa3b8"></i>Not yet</span>`;
+  $('#legend').innerHTML = ['both', 'a', 'b'].map(w => `<span><i style="background:${COLORS[w]}"></i>${esc(whoLabel(w))}</span>`).join('') + `<span><i style="background:#efe0bb"></i>Uncharted</span>`;
 }
 
 /* ───────────── add / edit dialog ───────────── */
@@ -725,11 +973,10 @@ let form = null;
 const tripDlg = $('#tripDlg');
 function openTripDlg({id, country} = {}) {
   const t = id ? state.trips.find(t => t.id === id) : null;
-  form = {id: t ? t.id : null, orig: t ? [...(t.photos || [])] : [], photos: t ? (t.photos || []).map(p => ({id:p, url:thumbURL[p]})) : []};
+  form = {id:t ? t.id : null, orig:t ? [...(t.photos || [])] : [], photos:t ? (t.photos || []).map(p => ({id:p, url:thumbURL[p]})) : []};
   $('#tripDlgTitle').textContent = t ? 'Edit visit' : 'Add a visit';
-  const names = features.map(f => f.properties.name);
   const cur = t ? t.country : (country || sel || '');
-  $('#fCountry').innerHTML = `<option value="" disabled ${cur ? '' : 'selected'}>Choose a country…</option>` + names.map(n => `<option ${n === cur ? 'selected' : ''}>${esc(n)}</option>`).join('');
+  $('#fCountry').innerHTML = `<option value="" disabled ${cur ? '' : 'selected'}>Choose a country…</option>` + featsHi.map(f => `<option ${f.name === cur ? 'selected' : ''}>${esc(f.name)}</option>`).join('');
   $('#fPlace').value = t ? t.place || '' : '';
   $('#fStart').value = t ? t.start : new Date().toISOString().slice(0, 10);
   $('#fEnd').value = t ? t.end || '' : '';
@@ -755,7 +1002,7 @@ async function addFiles(files) {
       const data = await processImage(f);
       form.photos.push({isNew:true, data, url:URL.createObjectURL(data.thumb)});
       renderPThumbs();
-    } catch (err) { console.error(err); toast(`Couldn't read ${f.name} (HEIC isn't supported by browsers — export as JPG)`); }
+    } catch (err) { console.error(err); toast(`Couldn't read ${f.name}. Try a JPG or PNG.`); }
   }
 }
 $('#drop').onclick = () => $('#fFiles').click();
@@ -768,7 +1015,7 @@ $('#tripForm').addEventListener('submit', async e => {
   e.preventDefault();
   const country = $('#fCountry').value, start = $('#fStart').value, end = $('#fEnd').value;
   if (!country || !start) return;
-  if (end && end < start) { toast('“To” date is before “From”'); return; }
+  if (end && end < start) { toast('The “To” date is before the “From” date'); return; }
   const ids = [];
   for (const p of form.photos) {
     if (p.isNew) { const id = uid(); await putPhoto(id, p.data); URL.revokeObjectURL(p.url); ids.push(id); }
@@ -781,16 +1028,14 @@ $('#tripForm').addEventListener('submit', async e => {
   await saveState();
   tripDlg.close();
   refresh();
-  toast(form.id ? 'Visit updated' : `${country} scratched off! 🎉`);
-  if (!form.id) { selectCountry(country); }
+  toast(form.id ? 'Visit updated' : `${country}, scratched off!`);
+  if (!form.id) selectCountry(country);
 });
 $('#addBtn').onclick = () => openTripDlg();
 
 /* ───────────── lightbox ───────────── */
 let lb = {ids:[], i:0};
-async function openLightbox(ids, i) {
-  lb = {ids, i}; showLb(); $('#lightbox').classList.add('on');
-}
+function openLightbox(ids, i) { lb = {ids, i}; showLb(); $('#lightbox').classList.add('on'); }
 async function showLb() {
   const id = lb.ids[lb.i];
   $('#lbImg').src = thumbURL[id] || '';
@@ -803,9 +1048,23 @@ $('#lbN').onclick = e => { e.stopPropagation(); lbStep(1); };
 $('#lbX').onclick = $('#lightbox').onclick = () => $('#lightbox').classList.remove('on');
 $('#lbImg').onclick = e => e.stopPropagation();
 
-/* ───────────── settings / backup ───────────── */
+/* ───────────── settings / pins / backup ───────────── */
 const setDlg = $('#setDlg');
-$('#setBtn').onclick = () => { $('#nameA').value = state.names.a; $('#nameB').value = state.names.b; setDlg.showModal(); };
+function renderPinSettings() {
+  const sample = state.pins.color === 'auto' ? COLORS.both : state.pins.color;
+  $('#gPins').innerHTML = pinButtons(state.pins.style, false, sample);
+  $('#gColors').innerHTML = colorButtons(state.pins.color, false);
+  $('#pinShow').checked = state.pins.show;
+  paintPreviews(setDlg);
+}
+$('#setBtn').onclick = () => { $('#nameA').value = state.names.a; $('#nameB').value = state.names.b; renderPinSettings(); setDlg.showModal(); };
+setDlg.addEventListener('click', e => {
+  const b = e.target.closest('[data-pin],[data-color]');
+  if (!b || b.parentElement.dataset.scope !== 'global') return;
+  if (b.dataset.pin) { state.pins.style = b.dataset.pin; state.pins.show = true; } else state.pins.color = b.dataset.color;
+  renderPinSettings(); saveState(); invalidate();
+});
+$('#pinShow').onchange = e => { state.pins.show = e.target.checked; saveState(); invalidate(); };
 setDlg.addEventListener('close', async () => {
   state.names.a = $('#nameA').value.trim() || 'Me';
   state.names.b = $('#nameB').value.trim() || 'Partner';
@@ -818,7 +1077,7 @@ async function exportData() {
     const d = db ? await idb('photos', 'readonly', s => s.get(id)) : memPhotos[id];
     if (d) photos[id] = {full:await blobToData(d.full), thumb:await blobToData(d.thumb)};
   }
-  return {app:'scratch-globe', version:1, names:state.names, trips:state.trips, photos};
+  return {app:'scratch-globe', version:2, ...state, photos};
 }
 async function importData(data) {
   if (!data || !Array.isArray(data.trips)) throw new Error('Not a Scratch Globe backup');
@@ -826,7 +1085,7 @@ async function importData(data) {
   for (const [id, p] of Object.entries(data.photos || {})) {
     await putPhoto(id, {full:await (await fetch(p.full)).blob(), thumb:await (await fetch(p.thumb)).blob()});
   }
-  state = {names:{a:'Me', b:'Partner', ...(data.names || {})}, trips:data.trips};
+  state = normalize(data);
   await saveState(); refresh();
 }
 $('#expBtn').onclick = async () => {
@@ -838,52 +1097,55 @@ $('#impBtn').onclick = () => $('#impFile').click();
 $('#impFile').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
   if (!confirm('Importing replaces everything currently saved here. Continue?')) return;
-  try { await importData(JSON.parse(await f.text())); toast('Backup restored'); } catch (err) { toast('Import failed: ' + err.message); }
+  try { await importData(JSON.parse(await f.text())); renderPinSettings(); toast('Backup restored'); } catch (err) { toast('Import failed: ' + err.message); }
 };
 $('#wipeBtn').onclick = async () => {
-  if (!confirm('Erase all trips and photos? This cannot be undone.')) return;
-  await importData({trips:[], names:state.names, photos:{}}); toast('Erased');
+  if (!confirm('Erase all trips and photographs? This cannot be undone.')) return;
+  await importData({trips:[], names:state.names, pins:state.pins, photos:{}}); toast('Erased');
 };
 
 /* ───────────── journey animation ───────────── */
-const J = {active:false, playing:false, stops:[], legs:[], i:0, shown:0, phase:'goto', t:0, speed:1, done:false, from:null, capKey:''};
+const J = {active:false, playing:false, stops:[], legs:[], i:0, shown:0, phase:'goto', t:0, speed:1, done:false, from:null, to:null, capKey:''};
 const DWELL = 2600;
 const SPEEDS = [.5, 1, 2, 4];
+const legDur = l => clamp(1800 + l.dist * 2400, 1800, 5200);
+const zoomAt = s => clamp(.1 / Math.sqrt(areaOf.get(s.trip.country) || .01), 1.3, 2.4);
 
 function startJourney() {
   const stops = sortedTrips().map(t => ({trip:t, c:centroid.get(t.country)})).filter(s => s.c);
-  if (!stops.length) { toast('Add a visit first, then watch your journey!'); return; }
+  if (!stops.length) { toast('Add a visit first, then watch your journey'); return; }
   closePanel();
   Object.assign(J, {active:true, playing:true, stops, done:false, capKey:''});
   J.legs = stops.slice(1).map((s, k) => {
-    const a = stops[k].c, b = s.c;
-    return {interp:d3.geoInterpolate(a, b), dist:d3.geoDistance(a, b)};
+    const a = stops[k].c, b = s.c, interp = d3.geoInterpolate(a, b);
+    return {interp, dist:d3.geoDistance(a, b), pts:d3.range(0, 1.0001, 1 / 48).map(t => interp(t))};
   });
   $('#track').innerHTML = `<div class="fill"></div>` + stops.map((s, i) => `<button data-i="${i}" title="${esc(s.trip.country)} · ${fmtDate(s.trip.start)}"></button>`).join('');
-  $('#jbar').classList.add('on'); $('#legend').style.display = 'none';
+  $('#jbar').classList.add('on'); $('#legend').style.visibility = 'hidden';
   $('#hint').classList.add('hide');
-  cam.target = null; autoRotate = false;
+  cam.target = null; cam.vel = 0; autoRotate = false;
   gotoStop(0);
   syncNav();
 }
 function exitJourney() {
   J.active = false; J.playing = false;
-  $('#jbar').classList.remove('on'); $('#legend').style.display = ''; $('#cap').classList.remove('on');
-  cam.zoom = Math.min(cam.zoom, 1.2);
+  $('#jbar').classList.remove('on'); $('#legend').style.visibility = ''; $('#cap').classList.remove('on');
+  cam.target = {lam:cam.lam, zoom:1, pan:[0, 0]};
   syncNav(); refresh();
 }
 function gotoStop(i) {
   J.i = clamp(i, 0, J.stops.length - 1); J.shown = J.i; J.phase = 'goto'; J.t = 0; J.done = false;
-  J.from = {rot:[...cam.rot], zoom:cam.zoom};
+  const s = J.stops[J.i];
+  J.from = {lam:cam.lam, zoom:cam.zoom, pan:[...cam.pan]};
+  J.to = {lam:-s.c[0], zoom:zoomAt(s)}; J.to.pan = panFor(s.c, J.to.lam);
   J.capKey = ''; updateJUI();
 }
 function stepJourney(dt) {
-  const s = J.stops[J.i];
   if (J.phase === 'goto') {
-    J.t += dt; const k = ease(clamp(J.t / 1500, 0, 1)), c = s.c;
-    cam.rot[0] = J.from.rot[0] + wrap180(-c[0] - J.from.rot[0]) * k;
-    cam.rot[1] = J.from.rot[1] + (-c[1] - J.from.rot[1]) * k;
-    cam.zoom = J.from.zoom + (J.zoomAt(s) - J.from.zoom) * k;
+    J.t += dt; const k = ease(clamp(J.t / 1500, 0, 1)), a = J.from, b = J.to;
+    cam.lam = a.lam + wrap180(b.lam - a.lam) * k;
+    cam.zoom = a.zoom + (b.zoom - a.zoom) * k;
+    cam.pan = [a.pan[0] + (b.pan[0] - a.pan[0]) * k, a.pan[1] + (b.pan[1] - a.pan[1]) * k];
     if (J.t >= 1500) { J.phase = 'dwell'; J.t = 0; J.shown = J.i + 1; updateJUI(); }
   } else if (J.phase === 'dwell') {
     if (!J.playing) return;
@@ -894,21 +1156,20 @@ function stepJourney(dt) {
     }
   } else if (J.phase === 'fly') {
     if (!J.playing) return;
-    const leg = J.legs[J.i], dur = clamp(1800 + leg.dist * 2400, 1800, 5200);
+    const leg = J.legs[J.i];
     J.t += dt * J.speed;
-    const k = clamp(J.t / dur, 0, 1), e = ease(k), p = leg.interp(e);
+    const k = clamp(J.t / legDur(leg), 0, 1), e = ease(k), p = leg.interp(e);
     const far = clamp(leg.dist / 1.1, .35, 1);
-    cam.rot[0] = -p[0]; cam.rot[1] = -p[1];
-    const z0 = J.zoomAt(J.stops[J.i]), z1 = J.zoomAt(J.stops[J.i + 1]);
-    cam.zoom = (z0 + (z1 - z0) * e) * (1 - .38 * Math.sin(Math.PI * k) * far);
+    cam.lam = -p[0];                         // the globe turns on its axis to follow the traveller
+    const z0 = zoomAt(J.stops[J.i]), z1 = zoomAt(J.stops[J.i + 1]);
+    cam.zoom = (z0 + (z1 - z0) * e) * (1 - .4 * Math.sin(Math.PI * k) * far);
+    cam.pan = panFor(p, cam.lam);
     if (k >= 1) { J.i++; J.shown = J.i + 1; J.phase = 'dwell'; J.t = 0; updateJUI(); }
   }
 }
-J.zoomAt = s => clamp(.1 / Math.sqrt(areaOf.get(s.trip.country) || .01), 1.1, 2.4);
-
 function updateJUI() {
   const n = J.stops.length, s = J.stops[J.i];
-  $('#jPlay').textContent = J.done ? '↻' : (J.playing ? '⏸' : '▶');
+  $('#jPlay').textContent = J.done ? '↻' : (J.playing ? '❚❚' : '▶');
   $('#jSpeed').textContent = J.speed + '×';
   document.querySelectorAll('#track button').forEach((b, i) => { b.classList.toggle('done', i < J.shown); b.classList.toggle('cur', i === J.i && J.phase !== 'fly'); });
   const f = $('#track .fill'); if (f) f.style.width = `calc(${n > 1 ? (Math.max(0, J.shown - 1) / (n - 1)) * 100 : 100}% - 12px)`;
@@ -916,52 +1177,57 @@ function updateJUI() {
   let html = '';
   if (J.phase === 'fly') {
     const nx = J.stops[J.i + 1];
-    html = `<div class="n">✈ Travelling</div><h3>${esc(s.trip.country)} → ${esc(nx.trip.country)}</h3><div class="sub">${fmtDate(nx.trip.start)}</div>`;
+    html = `<div class="n">En route</div><h3>${esc(s.trip.country)} to ${esc(nx.trip.country)}</h3><div class="sub">${fmtDate(nx.trip.start)}</div>`;
   } else if (J.phase === 'dwell') {
     const t = s.trip, ph = (t.photos || [])[0];
-    html = `<div class="n">Stop ${J.i + 1} of ${n}</div><h3>${esc(t.country)}</h3><div class="sub">${t.place ? esc(t.place) + ' · ' : ''}${fmtRange(t)} · ${esc(whoLabel(t.who))}</div>${t.note ? `<p>${esc(t.note)}</p>` : ''}${ph ? `<img src="${thumbURL[ph]}" alt="">` : ''}`;
-    if (J.done) html += `<p class="sub" style="margin-top:10px">🏁 That's the whole adventure — ${new Set(J.stops.map(x => x.trip.country)).size} countries together. Press ↻ to replay.</p>`;
+    html = `<div class="n">Chapter ${J.i + 1} of ${n}</div><h3>${esc(t.country)}</h3><div class="sub">${t.place ? esc(t.place) + ' · ' : ''}${fmtRange(t)} · ${esc(whoLabel(t.who))}</div>${t.note ? `<p>${esc(t.note)}</p>` : ''}${ph ? `<div class="ph"><img src="${thumbURL[ph]}" alt=""></div>` : ''}`;
+    if (J.done) html += `<p class="sub" style="margin-top:10px">The end… for now. ${new Set(J.stops.map(x => x.trip.country)).size} countries and counting. Press ↻ to relive it.</p>`;
   }
   if (J.capKey !== html) { J.capKey = html; cap.innerHTML = html; cap.classList.toggle('on', !!html); }
 }
 function drawJourney(now) {
   const n = J.shown;
-  // trail
   const done = J.phase === 'fly' ? J.i : n - 1;
-  ctx.lineCap = 'round';
+  // the red dashed route line of an old adventure map
   const trail = pts => {
     ctx.beginPath(); path({type:'LineString', coordinates:pts});
-    ctx.strokeStyle = 'rgba(255,200,220,.32)'; ctx.lineWidth = 7; ctx.stroke();
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6; ctx.setLineDash([2, 5]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.lineCap = 'round'; ctx.setLineDash([7, 6]);
+    ctx.strokeStyle = 'rgba(255,240,210,.7)'; ctx.lineWidth = 4.5; ctx.stroke();
+    ctx.strokeStyle = '#a3262c'; ctx.lineWidth = 2.6; ctx.stroke();
+    ctx.setLineDash([]);
   };
-  for (let k = 0; k < done; k++) { const l = J.legs[k]; trail(d3.range(0, 1.0001, 1 / 40).map(l.interp)); }
+  for (let k = 0; k < done; k++) trail(J.legs[k].pts);
   let plane = null;
   if (J.phase === 'fly') {
-    const l = J.legs[J.i], dur = clamp(1800 + l.dist * 2400, 1800, 5200), e = ease(clamp(J.t / dur, 0, 1));
-    trail(d3.range(0, e + 1e-6, Math.max(e / 40, .002)).map(l.interp));
+    const l = J.legs[J.i], e = ease(clamp(J.t / legDur(l), 0, 1));
+    trail(d3.range(0, e + 1e-6, Math.max(e / 40, .002)).map(t => l.interp(t)));
     plane = {p:l.interp(e), q:l.interp(Math.min(1, e + .02)), back:e > .97 ? l.interp(Math.max(0, e - .02)) : null};
   }
-  // stop markers
   for (let i = 0; i < n; i++) {
     const c = J.stops[i].c; if (!visible(c)) continue;
     const [x, y] = proj(c);
-    const cur = i === J.i && J.phase !== 'fly';
-    ctx.fillStyle = COLORS[J.stops[i].trip.who]; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x, y, cur ? 11 : 8, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#10142e'; ctx.font = `700 ${cur ? 11 : 9}px Inter,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const cur = i === J.i && J.phase !== 'fly', r = cur ? 11 : 8.5;
+    ctx.fillStyle = '#f6ecd2'; ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, r - 2.5, 0, 7); ctx.strokeStyle = COLORS[J.stops[i].trip.who]; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.fillStyle = INK; ctx.font = `${cur ? 13 : 11}px "IM Fell English",Georgia,serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(i + 1, x, y + .5);
-    if (cur) { // pulse
-      const ph = (now % 1600) / 1600;
-      ctx.strokeStyle = `rgba(255,255,255,${1 - ph})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 11 + ph * 22, 0, 7); ctx.stroke();
+    if (cur) {
+      const ph = (now % 1800) / 1800;
+      ctx.strokeStyle = `rgba(142,43,47,${1 - ph})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r + ph * 20, 0, 7); ctx.stroke();
     }
   }
   if (plane && visible(plane.p)) {
     const [x, y] = proj(plane.p);
     const q = plane.back ? proj(plane.back) : proj(plane.q);
     let ang = Math.atan2(q[1] - y, q[0] - x); if (plane.back) ang += Math.PI;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-    ctx.shadowColor = '#fff'; ctx.shadowBlur = 18; ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(-9, -8); ctx.lineTo(-4, 0); ctx.lineTo(-9, 8); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(1.15, 1.15);
+    ctx.fillStyle = INK; ctx.strokeStyle = '#f6ecd2'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); // a little propeller plane, nose pointing +x
+    ctx.moveTo(12, 0); ctx.lineTo(8, -1.8); ctx.lineTo(2, -2); ctx.lineTo(-1, -11); ctx.lineTo(-4, -11); ctx.lineTo(-3, -2);
+    ctx.lineTo(-9, -1.6); ctx.lineTo(-11, -5); ctx.lineTo(-13, -5); ctx.lineTo(-12, 0); ctx.lineTo(-13, 5); ctx.lineTo(-11, 5);
+    ctx.lineTo(-9, 1.6); ctx.lineTo(-3, 2); ctx.lineTo(-4, 11); ctx.lineTo(-1, 11); ctx.lineTo(2, 2); ctx.lineTo(8, 1.8); ctx.closePath();
+    ctx.stroke(); ctx.fill();
     ctx.restore();
   }
 }
@@ -971,28 +1237,30 @@ $('#jPlay').onclick = () => {
   updateJUI();
 };
 $('#jPrev').onclick = () => gotoStop(J.phase === 'fly' || J.phase === 'goto' ? J.i : J.i - 1);
-$('#jNext').onclick = () => gotoStop(J.phase === 'fly' ? J.i + 1 : J.i + 1);
+$('#jNext').onclick = () => gotoStop(J.i + 1);
 $('#jSpeed').onclick = () => { J.speed = SPEEDS[(SPEEDS.indexOf(J.speed) + 1) % SPEEDS.length]; updateJUI(); };
 $('#jExit').onclick = exitJourney;
 $('#track').addEventListener('click', e => { const b = e.target.closest('button'); if (b) gotoStop(+b.dataset.i); });
 
 addEventListener('keydown', e => {
-  if (e.key === 'Escape') { if (J.active) exitJourney(); else if (panelOpen && !document.querySelector('dialog[open]')) closePanel(); $('#lightbox').classList.remove('on'); }
+  const dlg = document.querySelector('dialog[open]');
+  if (e.key === 'Escape') { if (J.active) exitJourney(); else if (panelOpen && !dlg) closePanel(); $('#lightbox').classList.remove('on'); }
   if ($('#lightbox').classList.contains('on')) { if (e.key === 'ArrowLeft') lbStep(-1); if (e.key === 'ArrowRight') lbStep(1); }
-  if (J.active && e.key === ' ' && !document.querySelector('dialog[open]')) { e.preventDefault(); $('#jPlay').click(); }
+  if (J.active && e.key === ' ' && !dlg) { e.preventDefault(); $('#jPlay').click(); }
 });
 
 /* ───────────── boot ───────────── */
 (async function boot() {
   resize();
   try {
-    const [topo] = await Promise.all([
+    const [hi, lo] = await Promise.all([
       fetch('vendor/countries-50m.json').then(r => r.json()),
+      fetch('vendor/countries-110m.json').then(r => r.json()),
       loadAll()
     ]);
-    prepGeo(topo);
+    prepGeo(hi, lo);
   } catch (e) {
-    $('#loading').textContent = 'Could not load map data — reload the page.';
+    $('#loading').textContent = 'Could not load the map data. Please reload the page.';
     console.error(e); return;
   }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -1000,9 +1268,8 @@ addEventListener('keydown', e => {
   refresh();
   requestAnimationFrame(frame);
   $('#loading').classList.add('done');
-  // gentle intro spin
-  cam.zoom = .7; cam.target = {rot:cam.rot.slice(), zoom:1};
-  window.app = {get state() { return state; }, importData, exportData, startJourney, selectCountry, centroid};
+  cam.zoom = .8; cam.target = {lam:cam.lam, zoom:1, pan:[0, 0]};
+  window.app = {get state() { return state; }, importData, exportData, startJourney, selectCountry, setMode};
 })();
 })();
 </script>
