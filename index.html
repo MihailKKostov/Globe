@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="theme-color" content="#060919">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Our Scratch Globe</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -103,6 +109,7 @@ input[type=date]{color-scheme:dark}
 /* journey */
 #jbar{position:fixed;left:50%;bottom:18px;transform:translate(-50%,160%);z-index:9;width:min(760px,calc(100% - 28px));background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:8px 12px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
 #jbar.on{transform:translate(-50%,0)}
+#jbar:not(.on){visibility:hidden}
 #track{flex:1;display:flex;justify-content:space-between;align-items:center;position:relative;height:26px;padding:0 6px;min-width:60px}
 #track::before{content:"";position:absolute;left:6px;right:6px;top:50%;height:2px;background:var(--line);transform:translateY(-50%)}
 #track .fill{position:absolute;left:6px;top:50%;height:2px;background:linear-gradient(90deg,var(--a),var(--both));transform:translateY(-50%);transition:width .2s}
@@ -247,8 +254,8 @@ label{display:flex;flex-direction:column;gap:5px;color:var(--mute);font-size:12p
 <div id="lightbox"><button class="icon x" id="lbX">✕</button><button class="icon nav prev" id="lbP">‹</button><img id="lbImg" alt=""><button class="icon nav next" id="lbN">›</button></div>
 <div id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/topojson-client.min.js"></script>
 <script>
 (() => {
 'use strict';
@@ -980,14 +987,16 @@ addEventListener('keydown', e => {
   resize();
   try {
     const [topo] = await Promise.all([
-      fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json').then(r => r.json()),
+      fetch('vendor/countries-50m.json').then(r => r.json()),
       loadAll()
     ]);
     prepGeo(topo);
   } catch (e) {
-    $('#loading').textContent = 'Could not load map data — check your internet connection and reload.';
+    $('#loading').textContent = 'Could not load map data — reload the page.';
     console.error(e); return;
   }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   refresh();
   requestAnimationFrame(frame);
   $('#loading').classList.add('done');
