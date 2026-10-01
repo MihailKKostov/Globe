@@ -843,14 +843,14 @@ function pick(x, y) {
 gc.addEventListener('pointerdown', e => {
   try { gc.setPointerCapture(e.pointerId); } catch {}
   ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
-  drag = {moved:0, t:performance.now(), v:0};
+  drag = {moved:0, t:performance.now(), v:0, ax:0, ay:0, axis:null};
   if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
   if (!J.active) { cam.target = null; cam.vel = 0; autoRotate = false; }
 });
 gc.addEventListener('pointermove', e => {
   const p = ptrs.get(e.pointerId);
   if (p) {
-    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    let dx = e.clientX - p.x, dy = e.clientY - p.y;
     p.x = e.clientX; p.y = e.clientY;
     if (J.active || !drag) return;
     if (ptrs.size === 2) {
@@ -859,11 +859,17 @@ gc.addEventListener('pointermove', e => {
       pinchD = d; drag.moved = 99;
     } else {
       drag.moved += Math.abs(dx) + Math.abs(dy);
+      // each swipe does one thing: whichever way it starts (sideways = spin, up/down = slide the zoomed view) wins
+      if (!drag.axis) {
+        drag.ax += dx; drag.ay += dy;
+        if (Math.hypot(drag.ax, drag.ay) < 8) return;
+        drag.axis = Math.abs(drag.ax) >= Math.abs(drag.ay) * .8 || panFactor() === 0 ? 'x' : 'y';
+        dx = drag.axis === 'x' ? drag.ax : 0; dy = drag.axis === 'y' ? drag.ay : 0;
+      }
       const R = view.r * cam.zoom, now = performance.now();
-      const dl = dx * 57.3 / R;            // sideways drag turns the globe on its axis
-      cam.lam += dl;
-      const f = panFactor();               // up/down drag only slides the view when zoomed in
-      if (f > 0) cam.pan[1] = clamp(cam.pan[1] + dy / (R * Math.max(f, .25)), -1.1, 1.1);
+      let dl = 0;
+      if (drag.axis === 'x') { dl = dx * 57.3 / R; cam.lam += dl; }   // sideways drag turns the globe on its axis
+      else { const f = panFactor(); if (f > 0) cam.pan[1] = clamp(cam.pan[1] + dy / (R * Math.max(f, .25)), -1.1, 1.1); }
       const dtm = Math.max(1, now - drag.t); drag.v = drag.v * .5 + (dl / dtm) * .5; drag.t = now;
       gc.classList.add('drag');
     }
@@ -1956,7 +1962,7 @@ addEventListener('keydown', e => {
   if (CFG && (ls.get('sg-auth') || ls.get('sg-join'))) startCloud();
   if (ls.get('sg-join')) setMode('people');
   cam.zoom = .8; cam.target = {lam:cam.lam, zoom:1, pan:[0, 0]};
-  window.app = {get state() { return state; }, get cloud() { return cloud; }, importData, exportData, startJourney, selectCountry, setMode};
+  window.app = {get state() { return state; }, get cloud() { return cloud; }, get cam() { return cam; }, importData, exportData, startJourney, selectCountry, setMode};
 })();
 })();
 </script>
