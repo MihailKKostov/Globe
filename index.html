@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Our Scratch Globe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060919; --ink:#eef1ff; --mute:#9aa3c7; --line:rgba(255,255,255,.1);
+  --glass:rgba(14,19,46,.78); --glass2:rgba(255,255,255,.06);
+  --both:#ff6b81; --a:#3dd6c6; --b:#ffc857; --accent:#ff8fa3;
+  --serif:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;
+  --panel-w:420px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px}
+body{background:radial-gradient(1200px 800px at 80% -10%,#1c1450 0,transparent 60%),radial-gradient(900px 700px at 0% 110%,#0b2a52 0,transparent 55%),var(--bg)}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#globe{touch-action:none;cursor:grab}
+#globe.drag{cursor:grabbing}
+#globe.hover{cursor:pointer}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{background:var(--glass2);border:1px solid var(--line);border-radius:999px;padding:8px 14px;transition:.15s;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.13)}
+.btn.primary{background:linear-gradient(135deg,#ff6b81,#ff9a62);border:0;color:#2a0710;font-weight:600}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:4px 10px;font-size:12px}
+.btn.danger{color:#ff9aa6}
+.icon{width:34px;height:34px;padding:0;display:inline-grid;place-items:center;border-radius:50%;background:var(--glass2);border:1px solid var(--line)}
+.icon:hover{background:rgba(255,255,255,.14)}
+
+/* header */
+header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:14px;padding:12px 18px;z-index:10;pointer-events:none}
+header>*{pointer-events:auto}
+.brand{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+.brand i{font-style:normal;color:var(--accent)}
+.stats{color:var(--mute);font-size:13px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.stats b{color:var(--ink);font-weight:600}
+.stats .dotsep{opacity:.4}
+.spacer{flex:1}
+nav{display:flex;gap:6px;background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:4px;backdrop-filter:blur(14px)}
+nav button{background:none;border:0;border-radius:999px;padding:7px 14px;color:var(--mute)}
+nav button:hover{color:var(--ink)}
+nav button.on{background:rgba(255,255,255,.14);color:var(--ink)}
+
+/* legend */
+#legend{position:fixed;left:18px;bottom:18px;z-index:5;display:flex;gap:14px;font-size:12px;color:var(--mute);background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:7px 14px;backdrop-filter:blur(12px)}
+#legend span{display:flex;align-items:center;gap:6px}
+#legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+#hint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:4;color:var(--mute);font-size:13px;background:var(--glass);border:1px solid var(--line);padding:8px 16px;border-radius:999px;backdrop-filter:blur(12px);transition:opacity .4s;pointer-events:none;text-align:center}
+#hint.hide{opacity:0}
+#tip{position:fixed;z-index:20;pointer-events:none;background:rgba(8,12,32,.92);border:1px solid var(--line);padding:5px 10px;border-radius:8px;font-size:12px;transform:translate(12px,12px);opacity:0;transition:opacity .1s;white-space:nowrap}
+
+/* panel */
+#panel{position:fixed;top:68px;right:14px;bottom:14px;width:var(--panel-w);z-index:8;background:var(--glass);border:1px solid var(--line);border-radius:20px;backdrop-filter:blur(18px);display:flex;flex-direction:column;transform:translateX(calc(100% + 30px));transition:transform .35s cubic-bezier(.2,.8,.2,1);box-shadow:0 20px 60px rgba(0,0,0,.45)}
+#panel.open{transform:none}
+.panel-head{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.panel-head h2{margin:0;font-family:var(--serif);font-size:22px;flex:1;line-height:1.15}
+#panelBody{overflow:auto;padding:4px 16px 18px;flex:1}
+#panelBody::-webkit-scrollbar{width:8px}#panelBody::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:8px}
+.sub{color:var(--mute);font-size:13px}
+.empty{color:var(--mute);text-align:center;padding:36px 12px;line-height:1.6}
+.bar{height:6px;background:rgba(255,255,255,.09);border-radius:6px;overflow:hidden;margin:8px 0 14px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--both));border-radius:6px}
+input[type=search],input[type=text],input[type=date],select,textarea{width:100%;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:9px 12px;font:inherit;outline:none}
+input:focus,select:focus,textarea:focus{border-color:rgba(255,143,163,.7)}
+select option{background:#10163a}
+input[type=date]{color-scheme:dark}
+.seg{display:flex;gap:4px;margin:10px 0}
+.seg button{flex:1;background:var(--glass2);border:1px solid var(--line);border-radius:10px;padding:6px;color:var(--mute)}
+.seg button.on{color:var(--ink);background:rgba(255,255,255,.15)}
+.row{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:12px;cursor:pointer}
+.row:hover{background:var(--glass2)}
+.row .nm{flex:1;min-width:0}
+.row .nm b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row small{color:var(--mute)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:#59627f}
+.dot.both{background:var(--both)}.dot.a{background:var(--a)}.dot.b{background:var(--b)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:2px 9px;border-radius:999px;background:var(--glass2);border:1px solid var(--line);color:var(--mute)}
+.chip .dot{width:7px;height:7px}
+
+.card{background:var(--glass2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
+.card h4{margin:0 0 2px;font-family:var(--serif);font-size:17px;font-weight:500}
+.card .meta{color:var(--mute);font-size:12.5px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+.card p{margin:6px 0;white-space:pre-wrap;line-height:1.5}
+.card .acts{display:flex;gap:6px;margin-top:8px}
+.link{cursor:pointer}.link:hover{text-decoration:underline}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
+.thumbs button{padding:0;border:0;background:#0003;border-radius:8px;overflow:hidden;aspect-ratio:1;position:relative}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
+.thumbs button:hover img{transform:scale(1.07)}
+.thumbs .more{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.55);font-weight:600}
+
+.tl{position:relative;margin-left:8px;padding-left:22px;border-left:2px solid var(--line)}
+.tl h3{font-family:var(--serif);font-size:20px;margin:22px 0 4px -22px;color:var(--mute);font-weight:500}
+.tl h3:first-child{margin-top:4px}
+.tl .item{position:relative}
+.tl .item::before{content:"";position:absolute;left:-30px;top:18px;width:12px;height:12px;border-radius:50%;background:var(--c,#59627f);box-shadow:0 0 0 4px var(--bg),0 0 14px var(--c)}
+
+/* journey */
+#jbar{position:fixed;left:50%;bottom:18px;transform:translate(-50%,160%);z-index:9;width:min(760px,calc(100% - 28px));background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:8px 12px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+#jbar.on{transform:translate(-50%,0)}
+#track{flex:1;display:flex;justify-content:space-between;align-items:center;position:relative;height:26px;padding:0 6px;min-width:60px}
+#track::before{content:"";position:absolute;left:6px;right:6px;top:50%;height:2px;background:var(--line);transform:translateY(-50%)}
+#track .fill{position:absolute;left:6px;top:50%;height:2px;background:linear-gradient(90deg,var(--a),var(--both));transform:translateY(-50%);transition:width .2s}
+#track button{position:relative;width:12px;height:12px;padding:0;border-radius:50%;border:2px solid #59627f;background:var(--bg);flex:none}
+#track button.done{border-color:var(--both);background:var(--both)}
+#track button.cur{transform:scale(1.5);box-shadow:0 0 12px var(--both)}
+#cap{position:fixed;left:18px;top:76px;width:300px;z-index:7;background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:14px 16px;backdrop-filter:blur(16px);opacity:0;transform:translateY(-8px);transition:.3s;pointer-events:none}
+#cap.on{opacity:1;transform:none}
+#cap .n{color:var(--accent);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+#cap h3{font-family:var(--serif);font-size:26px;margin:2px 0 2px;line-height:1.1}
+#cap p{margin:8px 0 0;line-height:1.5;max-height:110px;overflow:hidden;white-space:pre-wrap}
+#cap img{width:100%;height:150px;object-fit:cover;border-radius:12px;margin-top:10px;display:block}
+
+/* dialogs */
+dialog{border:1px solid var(--line);background:#0e1330;color:var(--ink);border-radius:20px;padding:0;width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog::backdrop{background:rgba(3,5,16,.65);backdrop-filter:blur(4px)}
+dialog form{padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+dialog h2{margin:0 0 4px;font-family:var(--serif);font-size:24px}
+label{display:flex;flex-direction:column;gap:5px;color:var(--mute);font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.who{display:flex;gap:6px;flex-wrap:wrap}
+.who label{flex-direction:row;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;color:var(--ink);font-size:13px}
+.who input{display:none}
+.who label:has(input:checked){background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4)}
+.drop{border:1.5px dashed rgba(255,255,255,.25);border-radius:14px;padding:12px;text-align:center;color:var(--mute);cursor:pointer}
+.drop.over{border-color:var(--accent);background:var(--glass2)}
+.pthumbs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+.pthumbs div{position:relative;aspect-ratio:1}
+.pthumbs img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+.pthumbs button{position:absolute;top:-5px;right:-5px;width:20px;height:20px;border-radius:50%;border:0;background:#ff5a73;color:#fff;font-size:12px;line-height:1;padding:0}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+#lightbox{position:fixed;inset:0;z-index:50;background:rgba(2,4,12,.92);display:none;align-items:center;justify-content:center}
+#lightbox.on{display:flex}
+#lightbox img{max-width:92vw;max-height:88vh;border-radius:10px;box-shadow:0 20px 80px #000}
+#lightbox .nav{position:absolute;top:50%;transform:translateY(-50%);font-size:26px}
+#lightbox .prev{left:16px}#lightbox .next{right:16px}#lightbox .x{position:absolute;top:16px;right:16px}
+#toast{position:fixed;left:50%;top:72px;transform:translate(-50%,-20px);z-index:60;background:#1a2150;border:1px solid var(--line);padding:10px 18px;border-radius:12px;opacity:0;transition:.3s;pointer-events:none}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#loading{position:fixed;inset:0;display:grid;place-items:center;z-index:100;background:var(--bg);font-family:var(--serif);font-size:20px;color:var(--mute);transition:opacity .6s}
+#loading.done{opacity:0;pointer-events:none}
+
+@media (max-width:800px){
+  header{padding:10px 12px;flex-wrap:wrap;gap:4px 10px}
+  .brand{font-size:18px}
+  .stats{width:100%;order:3;font-size:12px}
+  header .spacer{display:block}
+  nav{position:fixed;bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:12;width:calc(100% - 20px);justify-content:space-around}
+  nav button{padding:8px 8px;flex:1}
+  #panel{top:auto;left:8px;right:8px;width:auto;height:52vh;bottom:68px;transform:translateY(130%)}
+  #panel.open{transform:none}
+  #legend{display:none}
+  #hint{bottom:78px;font-size:12px;width:max-content;max-width:90%}
+  #jbar{bottom:72px;border-radius:20px}
+  #cap{left:10px;right:10px;width:auto;top:auto;bottom:128px}
+  #cap img{display:none}
+  .thumbs{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<div id="loading">Polishing the globe…</div>
+<canvas id="stars"></canvas>
+<canvas id="globe"></canvas>
+
+<header>
+  <div class="brand"><i>✦</i> Our Scratch Globe</div>
+  <div class="stats" id="stats"></div>
+  <div class="spacer"></div>
+  <button class="btn primary" id="addBtn">+ Add visit</button>
+  <nav id="nav">
+    <button data-nav="globe" class="on">Globe</button>
+    <button data-nav="list">Countries</button>
+    <button data-nav="timeline">Timeline</button>
+    <button data-nav="journey">▶ Journey</button>
+  </nav>
+  <button class="icon" id="setBtn" title="Settings, backup &amp; restore">⚙</button>
+</header>
+
+<div id="legend"></div>
+<div id="hint">Drag to spin · scroll to zoom · click a country to scratch it off</div>
+<div id="tip"></div>
+
+<aside id="panel">
+  <div class="panel-head">
+    <button class="icon" id="backBtn" style="display:none" title="Back">‹</button>
+    <h2 id="panelTitle"></h2>
+    <button class="icon" id="closeBtn" title="Close">✕</button>
+  </div>
+  <div id="panelBody"></div>
+</aside>
+
+<div id="cap"></div>
+<div id="jbar">
+  <button class="icon" id="jPrev" title="Previous stop">⏮</button>
+  <button class="icon" id="jPlay" title="Play / pause">⏸</button>
+  <button class="icon" id="jNext" title="Next stop">⏭</button>
+  <div id="track"></div>
+  <button class="btn small" id="jSpeed" title="Speed">1×</button>
+  <button class="icon" id="jExit" title="Exit journey">✕</button>
+</div>
+
+<dialog id="tripDlg">
+  <form id="tripForm" method="dialog">
+    <h2 id="tripDlgTitle">Add a visit</h2>
+    <label>Country<select id="fCountry" required></select></label>
+    <label>Place / city (optional)<input type="text" id="fPlace" placeholder="e.g. Kyoto, Lake Bled, road trip…"></label>
+    <div class="two">
+      <label>From<input type="date" id="fStart" required></label>
+      <label>To (optional)<input type="date" id="fEnd"></label>
+    </div>
+    <label>Who went<div class="who" id="fWho"></div></label>
+    <label>Notes<textarea id="fNote" rows="4" placeholder="What do you remember? Best meal, funniest moment…"></textarea></label>
+    <div>
+      <div class="drop" id="drop">📷 Add photos — click or drop them here<input type="file" id="fFiles" accept="image/*" multiple hidden></div>
+      <div class="pthumbs" id="pthumbs"></div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="tripCancel">Cancel</button>
+      <button type="submit" class="btn primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="setDlg">
+  <form method="dialog">
+    <h2>Settings</h2>
+    <div class="two">
+      <label>Your name<input type="text" id="nameA" maxlength="20"></label>
+      <label>Partner's name<input type="text" id="nameB" maxlength="20"></label>
+    </div>
+    <div class="sub">Everything is stored in this browser (IndexedDB). Back it up regularly with Export — it includes your photos.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn" id="expBtn">⬇ Export backup</button>
+      <button type="button" class="btn" id="impBtn">⬆ Import backup</button>
+      <button type="button" class="btn danger" id="wipeBtn">Erase everything</button>
+      <input type="file" id="impFile" accept="application/json" hidden>
+    </div>
+    <div class="actions"><button class="btn primary" value="ok">Done</button></div>
+  </form>
+</dialog>
+
+<div id="lightbox"><button class="icon x" id="lbX">✕</button><button class="icon nav prev" id="lbP">‹</button><img id="lbImg" alt=""><button class="icon nav next" id="lbN">›</button></div>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const wrap180 = d => ((d + 540) % 360) - 180;
+const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+const TOTAL_COUNTRIES = 195;
+const COLORS = {both:'#ff6b81', a:'#3dd6c6', b:'#ffc857'};
+
+/* ───────────── state & storage ───────────── */
+let state = {names:{a:'Me', b:'Partner'}, trips:[]};
+let db = null;
+const thumbURL = {};          // photo id -> object URL (thumbnail)
+const memPhotos = {};         // fallback if IndexedDB is unavailable
+
+function idb(store, mode, fn) {
+  return new Promise((res, rej) => {
+    const t = db.transaction(store, mode);
+    const r = fn(t.objectStore(store));
+    t.oncomplete = () => res(r && r.result);
+    t.onerror = t.onabort = () => rej(t.error);
+  });
+}
+async function openDB() {
+  try {
+    db = await new Promise((res, rej) => {
+      const r = indexedDB.open('scratch-globe', 1);
+      r.onupgradeneeded = () => { r.result.createObjectStore('kv'); r.result.createObjectStore('photos'); };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  } catch (e) { db = null; toast('Storage unavailable — changes will not be saved'); }
+}
+const saveState = () => db ? idb('kv', 'readwrite', s => s.put(state, 'state')).catch(console.error) : null;
+async function putPhoto(id, data) {
+  thumbURL[id] = URL.createObjectURL(data.thumb);
+  if (db) await idb('photos', 'readwrite', s => s.put(data, id)); else memPhotos[id] = data;
+}
+async function delPhoto(id) {
+  if (thumbURL[id]) { URL.revokeObjectURL(thumbURL[id]); delete thumbURL[id]; }
+  delete memPhotos[id];
+  if (db) await idb('photos', 'readwrite', s => s.delete(id));
+}
+async function getFullPhoto(id) {
+  const d = db ? await idb('photos', 'readonly', s => s.get(id)) : memPhotos[id];
+  return d ? URL.createObjectURL(d.full) : thumbURL[id];
+}
+async function loadAll() {
+  await openDB();
+  if (!db) return;
+  const s = await idb('kv', 'readonly', s => s.get('state'));
+  if (s) state = {names: {a:'Me', b:'Partner', ...s.names}, trips: s.trips || []};
+  const keys = await idb('photos', 'readonly', s => s.getAllKeys());
+  for (const k of keys) {
+    const d = await idb('photos', 'readonly', s => s.get(k));
+    if (d) thumbURL[k] = URL.createObjectURL(d.thumb);
+  }
+}
+
+async function processImage(file) {
+  let bmp;
+  try { bmp = await createImageBitmap(file, {imageOrientation: 'from-image'}); }
+  catch { bmp = await createImageBitmap(file); }
+  const mk = (max, q) => {
+    const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    return new Promise(r => c.toBlob(r, 'image/jpeg', q));
+  };
+  const out = {full: await mk(1800, .82), thumb: await mk(380, .78)};
+  bmp.close && bmp.close();
+  return out;
+}
+
+/* ───────────── helpers on trips ───────────── */
+const sortedTrips = () => [...state.trips].sort((a, b) => a.start.localeCompare(b.start) || (a.created||0) - (b.created||0));
+const tripsOf = name => sortedTrips().filter(t => t.country === name);
+const whoLabel = w => w === 'both' ? 'Together' : state.names[w];
+const fmtDate = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'}); };
+const fmtRange = t => (t.end && t.end !== t.start) ? `${fmtDate(t.start)} – ${fmtDate(t.end)}` : fmtDate(t.start);
+function countryWho(trips) {
+  const s = new Set(trips.map(t => t.who));
+  return (s.has('both') || (s.has('a') && s.has('b'))) ? 'both' : (s.has('a') ? 'a' : 'b');
+}
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+
+/* ───────────── geo data ───────────── */
+let features = [], byName = new Map(), centroid = new Map(), areaOf = new Map();
+const sphere = {type:'Sphere'};
+const graticule = d3.geoGraticule10();
+
+function prepGeo(topo) {
+  features = topojson.feature(topo, topo.objects.countries).features.filter(f => f.properties.name);
+  for (const f of features) {
+    const n = f.properties.name;
+    byName.set(n, f);
+    let g = f.geometry, best = f;
+    if (g.type === 'MultiPolygon') {
+      let m = -1;
+      for (const c of g.coordinates) { const p = {type:'Polygon', coordinates:c}; const a = d3.geoArea(p); if (a > m) { m = a; best = p; } }
+    }
+    centroid.set(n, d3.geoCentroid(best));
+    areaOf.set(n, d3.geoArea(best));
+  }
+  features.sort((a, b) => a.properties.name.localeCompare(b.properties.name));
+}
+
+/* ───────────── canvas / camera ───────────── */
+const gc = $('#globe'), ctx = gc.getContext('2d');
+const sc = $('#stars'), sctx = sc.getContext('2d');
+let W, H, dpr;
+const cam = {rot:[-10, -20], zoom:1, target:null};
+const view = {cx:0, cy:0, r:300};
+const proj = d3.geoOrthographic().clipAngle(90).precision(.5);
+const path = d3.geoPath(proj, ctx);
+let foil, autoRotate = true, lastInteract = performance.now();
+let panelOpen = false, mode = 'list', prevMode = 'list', sel = null, hover = null;
+
+function drawStars() {
+  sc.width = W * dpr; sc.height = H * dpr;
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 220; i++) {
+    const x = rnd() * W, y = rnd() * H, r = rnd() * 1.2 + .2;
+    sctx.fillStyle = `rgba(255,255,255,${.2 + rnd() * .6})`;
+    sctx.beginPath(); sctx.arc(x, y, r, 0, 7); sctx.fill();
+  }
+}
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  for (const c of [gc, sc]) { c.width = W * dpr; c.height = H * dpr; }
+  drawStars();
+  const t = targetView(); Object.assign(view, t);
+}
+addEventListener('resize', resize);
+
+function makeFoil() {
+  const s = 256, c = document.createElement('canvas'); c.width = c.height = s;
+  const g = c.getContext('2d');
+  g.fillStyle = '#a2aabb'; g.fillRect(0, 0, s, s);
+  const img = g.getImageData(0, 0, s, s), d = img.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - .5) * 16; d[i] += n; d[i+1] += n; d[i+2] += n; }
+  g.putImageData(img, 0, 0);
+  g.lineWidth = 1;
+  for (let i = 0; i < 420; i++) {
+    g.strokeStyle = Math.random() < .5 ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.1)';
+    const l = 10 + Math.random() * 50, x = Math.random() * (s - l - 4), y = 4 + Math.random() * (s - 8);
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + l, y + (Math.random() - .5) * 8); g.stroke();
+  }
+  return ctx.createPattern(c, 'repeat');
+}
+
+function targetView() {
+  const mobile = W <= 800;
+  let left = 0, right = W, top = mobile ? 90 : 64, bottom = H;
+  if (mobile) bottom -= 70;
+  if (panelOpen) { if (mobile) bottom -= H * .52 + 0; else right -= 440; }
+  if (J.active) bottom -= mobile ? 150 : 80;
+  const w = right - left, h = bottom - top;
+  return {cx:(left + right) / 2, cy:(top + bottom) / 2, r:Math.max(70, Math.min(w, h) * .47)};
+}
+
+function setProj() {
+  proj.rotate(cam.rot).translate([view.cx, view.cy]).scale(view.r * cam.zoom);
+}
+const centerLL = () => [-cam.rot[0], -cam.rot[1]];
+const visible = ll => d3.geoDistance(ll, centerLL()) < Math.PI / 2 - .02;
+
+/* which countries are scratched (honours journey progress) */
+function scratched() {
+  const m = new Map();
+  const list = J.active ? J.stops.slice(0, J.shown).map(s => s.trip) : state.trips;
+  for (const t of list) { if (!m.has(t.country)) m.set(t.country, []); m.get(t.country).push(t); }
+  const out = new Map();
+  for (const [k, v] of m) out.set(k, countryWho(v));
+  return out;
+}
+
+let lastT = performance.now();
+function frame(now) {
+  const dt = Math.min(64, now - lastT); lastT = now;
+  // smooth view rect
+  const tv = targetView(), k = 1 - Math.exp(-dt / 140);
+  view.cx += (tv.cx - view.cx) * k; view.cy += (tv.cy - view.cy) * k; view.r += (tv.r - view.r) * k;
+
+  if (J.active) stepJourney(dt);
+  else if (cam.target) {
+    const kk = 1 - Math.exp(-dt / 160), t = cam.target;
+    cam.rot[0] += wrap180(t.rot[0] - cam.rot[0]) * kk;
+    cam.rot[1] += (t.rot[1] - cam.rot[1]) * kk;
+    cam.zoom += (t.zoom - cam.zoom) * kk;
+    if (Math.abs(wrap180(t.rot[0] - cam.rot[0])) < .05 && Math.abs(t.rot[1] - cam.rot[1]) < .05) cam.target = null;
+  } else if (autoRotate && !panelOpen && now - lastInteract > 2500) {
+    cam.rot[0] -= dt * .008;
+  }
+  draw(now);
+  requestAnimationFrame(frame);
+}
+
+function draw(now) {
+  setProj();
+  const {cx, cy} = view, r = view.r * cam.zoom;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  // atmosphere
+  let g = ctx.createRadialGradient(cx, cy, r * .97, cx, cy, r * 1.28);
+  g.addColorStop(0, 'rgba(110,170,255,.42)'); g.addColorStop(.35, 'rgba(120,110,255,.14)'); g.addColorStop(1, 'rgba(100,100,255,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r * 1.28, 0, 7); ctx.fill();
+
+  // ocean
+  g = ctx.createRadialGradient(cx - r * .35, cy - r * .4, r * .05, cx, cy, r);
+  g.addColorStop(0, '#2a62a8'); g.addColorStop(.55, '#12306a'); g.addColorStop(1, '#070f2e');
+  ctx.fillStyle = g; ctx.beginPath(); path(sphere); ctx.fill();
+
+  ctx.beginPath(); path(graticule); ctx.strokeStyle = 'rgba(190,215,255,.09)'; ctx.lineWidth = .6; ctx.stroke();
+
+  // land: foil for unscratched
+  const sx = scratched();
+  foil = foil || makeFoil();
+  ctx.beginPath();
+  for (const f of features) if (!sx.has(f.properties.name)) path(f);
+  ctx.fillStyle = foil; ctx.fill();
+  ctx.strokeStyle = 'rgba(25,32,58,.75)'; ctx.lineWidth = .5; ctx.stroke();
+
+  // scratched countries
+  for (const [name, who] of sx) {
+    const f = byName.get(name); if (!f) continue;
+    const col = COLORS[who];
+    ctx.save();
+    ctx.shadowColor = col; ctx.shadowBlur = 16;
+    ctx.fillStyle = col; ctx.beginPath(); path(f); ctx.fill();
+    ctx.restore();
+    ctx.globalAlpha = .22; ctx.fillStyle = foil; ctx.beginPath(); path(f); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = .7; ctx.stroke();
+  }
+
+  // hover / selection
+  for (const [name, w, col] of [[hover, 1.5, 'rgba(255,255,255,.9)'], [sel, 2.2, '#fff']]) {
+    const f = name && byName.get(name); if (!f) continue;
+    ctx.beginPath(); path(f); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.stroke();
+  }
+
+  // sphere shading
+  g = ctx.createRadialGradient(cx - r * .4, cy - r * .45, r * .1, cx, cy, r * 1.02);
+  g.addColorStop(0, 'rgba(255,255,255,.14)'); g.addColorStop(.45, 'rgba(255,255,255,0)'); g.addColorStop(.8, 'rgba(0,5,25,.25)'); g.addColorStop(1, 'rgba(0,5,25,.65)');
+  ctx.fillStyle = g; ctx.beginPath(); path(sphere); ctx.fill();
+  ctx.strokeStyle = 'rgba(160,200,255,.35)'; ctx.lineWidth = 1; ctx.beginPath(); path(sphere); ctx.stroke();
+
+  if (J.active) drawJourney(now); else drawPins(sx, now);
+}
+
+function drawPins(sx, now) {
+  for (const [name, who] of sx) {
+    const c = centroid.get(name); if (!c || !visible(c)) continue;
+    const [x, y] = proj(c);
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, 3.2, 0, 7); ctx.fill();
+    ctx.strokeStyle = COLORS[who]; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 6, 0, 7); ctx.stroke();
+  }
+}
+
+/* ───────────── interaction ───────────── */
+const ptrs = new Map(); let drag = null, pinchD = 0;
+const interact = () => { lastInteract = performance.now(); };
+function pick(x, y) {
+  setProj();
+  const ll = proj.invert([x, y]);
+  if (!ll || d3.geoDistance(ll, centerLL()) > Math.PI / 2) return null;
+  if (Math.hypot(x - view.cx, y - view.cy) > view.r * cam.zoom) return null;
+  for (const f of features) if (d3.geoContains(f, ll)) return f.properties.name;
+  return null;
+}
+gc.addEventListener('pointerdown', e => {
+  gc.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  drag = {x:e.clientX, y:e.clientY, moved:0};
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); }
+  if (!J.active) { cam.target = null; autoRotate = false; }
+  interact();
+});
+gc.addEventListener('pointermove', e => {
+  const p = ptrs.get(e.pointerId);
+  if (p) {
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    if (J.active) return;
+    if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      cam.zoom = clamp(cam.zoom * d / pinchD, .6, 8); pinchD = d; drag.moved = 99;
+    } else if (drag) {
+      drag.moved += Math.abs(dx) + Math.abs(dy);
+      const s = 57.3 / (view.r * cam.zoom);
+      cam.rot[0] += dx * s; cam.rot[1] = clamp(cam.rot[1] - dy * s, -90, 90);
+      gc.classList.add('drag');
+    }
+    interact();
+  } else {
+    hoverPending = {x:e.clientX, y:e.clientY};
+  }
+});
+const endPtr = e => {
+  const was = drag;
+  ptrs.delete(e.pointerId); gc.classList.remove('drag');
+  if (was && was.moved < 6 && ptrs.size === 0 && e.type === 'pointerup' && !J.active) clickAt(e.clientX, e.clientY);
+  if (ptrs.size === 0) drag = null;
+};
+gc.addEventListener('pointerup', endPtr); gc.addEventListener('pointercancel', endPtr);
+gc.addEventListener('wheel', e => {
+  e.preventDefault(); if (J.active) return;
+  cam.target = null; autoRotate = false; interact();
+  cam.zoom = clamp(cam.zoom * Math.exp(-e.deltaY * .0012), .6, 8);
+}, {passive:false});
+gc.addEventListener('pointerleave', () => { hoverPending = null; hover = null; $('#tip').style.opacity = 0; });
+
+let hoverPending = null;
+setInterval(() => {
+  if (!hoverPending || J.active || drag) return;
+  const {x, y} = hoverPending; hoverPending = null;
+  hover = pick(x, y);
+  const tip = $('#tip');
+  gc.classList.toggle('hover', !!hover);
+  if (hover) {
+    const n = tripsOf(hover).length;
+    tip.textContent = hover + (n ? `  ·  ${n} visit${n > 1 ? 's' : ''}` : '');
+    tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.style.opacity = 1;
+  } else tip.style.opacity = 0;
+}, 50);
+
+function flyTo(name) {
+  const c = centroid.get(name); if (!c) return;
+  const a = areaOf.get(name) || .01;
+  cam.target = {rot:[-c[0], -c[1]], zoom:clamp(.17 / Math.sqrt(a), 1.1, 5)};
+  autoRotate = false;
+}
+function clickAt(x, y) {
+  const n = pick(x, y);
+  if (n) selectCountry(n);
+  else if (panelOpen && mode === 'country') closePanel();
+}
+function selectCountry(n) {
+  if (mode !== 'country') prevMode = panelOpen ? mode : 'globe';
+  sel = n; mode = 'country'; openPanel(); flyTo(n);
+}
+
+/* ───────────── panel ───────────── */
+function openPanel() { panelOpen = true; $('#panel').classList.add('open'); renderPanel(); syncNav(); }
+function closePanel() { panelOpen = false; sel = null; $('#panel').classList.remove('open'); syncNav(); }
+function setMode(m) { mode = m; sel = null; openPanel(); }
+function syncNav() {
+  const cur = J.active ? 'journey' : (!panelOpen ? 'globe' : (mode === 'country' ? (prevMode === 'timeline' ? 'timeline' : prevMode === 'list' ? 'list' : 'globe') : mode));
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.nav === cur));
+}
+$('#nav').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const n = b.dataset.nav;
+  if (n !== 'journey' && J.active) exitJourney();
+  if (n === 'globe') closePanel();
+  else if (n === 'journey') startJourney();
+  else { setMode(n); }
+});
+$('#closeBtn').onclick = closePanel;
+$('#backBtn').onclick = () => { if (prevMode === 'globe') closePanel(); else { mode = prevMode; sel = null; renderPanel(); syncNav(); } };
+
+let listFilter = 'visited', listQuery = '';
+function whoChip(w) { return `<span class="chip"><i class="dot ${w}"></i>${esc(whoLabel(w))}</span>`; }
+
+function tripCard(t, opts = {}) {
+  const photos = t.photos || [];
+  const shown = photos.slice(0, 8);
+  const thumbs = photos.length ? `<div class="thumbs">${shown.map((id, i) =>
+    `<button data-act="photo" data-id="${t.id}" data-i="${i}"><img src="${thumbURL[id] || ''}" alt="">${(i === 7 && photos.length > 8) ? `<span class="more">+${photos.length - 7}</span>` : ''}</button>`).join('')}</div>` : '';
+  return `<div class="card item" style="--c:${COLORS[t.who]}">
+    <h4>${opts.showCountry ? `<span class="link" data-act="country" data-c="${esc(t.country)}">${esc(t.country)}</span>${t.place ? ' · ' + esc(t.place) : ''}` : (esc(t.place) || fmtRange(t))}</h4>
+    <div class="meta">${(opts.showCountry || !t.place) ? '' : fmtRange(t) + ' ·'}${opts.showCountry ? fmtRange(t) : ''} ${whoChip(t.who)}</div>
+    ${t.note ? `<p>${esc(t.note)}</p>` : ''}${thumbs}
+    <div class="acts"><button class="btn small" data-act="edit" data-id="${t.id}">Edit</button><button class="btn small danger" data-act="del" data-id="${t.id}">Delete</button></div>
+  </div>`;
+}
+
+function renderPanel() {
+  const body = $('#panelBody'), title = $('#panelTitle');
+  $('#backBtn').style.display = mode === 'country' ? '' : 'none';
+  if (mode === 'country') {
+    title.textContent = sel;
+    const ts = tripsOf(sel);
+    body.innerHTML = ts.length
+      ? `<div class="sub">${ts.length} visit${ts.length > 1 ? 's' : ''} · ${ts.reduce((n, t) => n + (t.photos||[]).length, 0)} photos</div>` +
+        ts.map(t => tripCard(t)).join('') +
+        `<button class="btn" style="width:100%;margin-top:6px" data-act="add" data-c="${esc(sel)}">+ Another visit to ${esc(sel)}</button>`
+      : `<div class="empty">Not scratched off yet.<br><br><button class="btn primary" data-act="add" data-c="${esc(sel)}">Scratch it off — add a visit</button></div>`;
+  } else if (mode === 'list') {
+    title.textContent = 'Countries';
+    const n = new Set(state.trips.map(t => t.country)).size;
+    body.innerHTML = `<div class="sub">${n} of ${TOTAL_COUNTRIES} countries · ${Math.round(n / TOTAL_COUNTRIES * 100)}% of the world</div>
+      <div class="bar"><i style="width:${n / TOTAL_COUNTRIES * 100}%"></i></div>
+      <input type="search" id="q" placeholder="Search countries…" value="${esc(listQuery)}">
+      <div class="seg"><button data-f="visited" class="${listFilter === 'visited' ? 'on' : ''}">Visited (${n})</button><button data-f="all" class="${listFilter === 'all' ? 'on' : ''}">All countries</button></div>
+      <div id="listItems"></div>`;
+    renderList();
+  } else {
+    title.textContent = 'Timeline';
+    const ts = sortedTrips();
+    if (!ts.length) { body.innerHTML = `<div class="empty">Your story starts here.<br>Add your first trip and it will appear on the timeline.</div>`; return; }
+    let html = '<div class="tl">', year = '';
+    for (const t of ts) {
+      const y = t.start.slice(0, 4);
+      if (y !== year) { year = y; html += `<h3>${y}</h3>`; }
+      html += tripCard(t, {showCountry:true});
+    }
+    body.innerHTML = html + '</div>';
+  }
+}
+function renderList() {
+  const el = $('#listItems'); if (!el) return;
+  const q = listQuery.trim().toLowerCase();
+  const visited = new Set(state.trips.map(t => t.country));
+  let names = features.map(f => f.properties.name).filter(n => (listFilter === 'all' || visited.has(n)) && n.toLowerCase().includes(q));
+  if (listFilter === 'all') names.sort((a, b) => (visited.has(b) - visited.has(a)) || a.localeCompare(b));
+  if (!names.length) { el.innerHTML = `<div class="empty">${listFilter === 'visited' && !q ? 'Nothing scratched off yet — click a country on the globe, or hit “+ Add visit”.' : 'No matches.'}</div>`; return; }
+  el.innerHTML = names.map(n => {
+    const ts = tripsOf(n), last = ts[ts.length - 1];
+    const w = ts.length ? countryWho(ts) : '';
+    return `<div class="row" data-act="country" data-c="${esc(n)}"><i class="dot ${w}"></i><div class="nm"><b>${esc(n)}</b><small>${ts.length ? `${ts.length} visit${ts.length > 1 ? 's' : ''} · last ${fmtDate(last.start)}` : 'Not visited'}</small></div><span class="sub">›</span></div>`;
+  }).join('');
+}
+$('#panelBody').addEventListener('input', e => { if (e.target.id === 'q') { listQuery = e.target.value; renderList(); } });
+$('#panelBody').addEventListener('click', e => {
+  const f = e.target.closest('[data-f]');
+  if (f) { listFilter = f.dataset.f; renderPanel(); return; }
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const act = a.dataset.act, id = a.dataset.id, c = a.dataset.c;
+  if (act === 'country') selectCountry(c);
+  else if (act === 'add') openTripDlg({country:c});
+  else if (act === 'edit') openTripDlg({id});
+  else if (act === 'del') deleteTrip(id);
+  else if (act === 'photo') { const t = state.trips.find(t => t.id === id); openLightbox(t.photos, +a.dataset.i); }
+});
+
+async function deleteTrip(id) {
+  const t = state.trips.find(t => t.id === id);
+  if (!t || !confirm(`Delete this visit to ${t.country}?`)) return;
+  for (const p of t.photos || []) await delPhoto(p);
+  state.trips = state.trips.filter(x => x.id !== id);
+  await saveState(); refresh();
+}
+function refresh() {
+  updateStats(); updateLegend(); if (panelOpen) renderPanel();
+  $('#hint').classList.toggle('hide', state.trips.length > 0 || J.active);
+}
+function updateStats() {
+  const n = new Set(state.trips.map(t => t.country)).size;
+  const p = state.trips.reduce((s, t) => s + (t.photos || []).length, 0);
+  $('#stats').innerHTML = `<b>${n}</b> countries<span class="dotsep">·</span><b>${Math.round(n / TOTAL_COUNTRIES * 100)}%</b> of the world<span class="dotsep">·</span><b>${state.trips.length}</b> trips<span class="dotsep">·</span><b>${p}</b> photos`;
+}
+function updateLegend() {
+  $('#legend').innerHTML = ['both', 'a', 'b'].map(w => `<span><i style="background:${COLORS[w]}"></i>${esc(whoLabel(w))}</span>`).join('') + `<span><i style="background:#9aa3b8"></i>Not yet</span>`;
+}
+
+/* ───────────── add / edit dialog ───────────── */
+let form = null;
+const tripDlg = $('#tripDlg');
+function openTripDlg({id, country} = {}) {
+  const t = id ? state.trips.find(t => t.id === id) : null;
+  form = {id: t ? t.id : null, orig: t ? [...(t.photos || [])] : [], photos: t ? (t.photos || []).map(p => ({id:p, url:thumbURL[p]})) : []};
+  $('#tripDlgTitle').textContent = t ? 'Edit visit' : 'Add a visit';
+  const names = features.map(f => f.properties.name);
+  const cur = t ? t.country : (country || sel || '');
+  $('#fCountry').innerHTML = `<option value="" disabled ${cur ? '' : 'selected'}>Choose a country…</option>` + names.map(n => `<option ${n === cur ? 'selected' : ''}>${esc(n)}</option>`).join('');
+  $('#fPlace').value = t ? t.place || '' : '';
+  $('#fStart').value = t ? t.start : new Date().toISOString().slice(0, 10);
+  $('#fEnd').value = t ? t.end || '' : '';
+  $('#fNote').value = t ? t.note || '' : '';
+  const who = t ? t.who : 'both';
+  $('#fWho').innerHTML = ['both', 'a', 'b'].map(w => `<label><input type="radio" name="who" value="${w}" ${w === who ? 'checked' : ''}>${esc(whoLabel(w))}</label>`).join('');
+  renderPThumbs();
+  tripDlg.showModal();
+}
+function renderPThumbs() {
+  $('#pthumbs').innerHTML = form.photos.map((p, i) => `<div><img src="${p.url}" alt=""><button type="button" data-i="${i}" title="Remove">×</button></div>`).join('');
+}
+$('#pthumbs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const [p] = form.photos.splice(+b.dataset.i, 1);
+  if (p.isNew) URL.revokeObjectURL(p.url);
+  renderPThumbs();
+});
+async function addFiles(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    try {
+      const data = await processImage(f);
+      form.photos.push({isNew:true, data, url:URL.createObjectURL(data.thumb)});
+      renderPThumbs();
+    } catch (err) { console.error(err); toast(`Couldn't read ${f.name} (HEIC isn't supported by browsers — export as JPG)`); }
+  }
+}
+$('#drop').onclick = () => $('#fFiles').click();
+$('#fFiles').onchange = e => { addFiles([...e.target.files]); e.target.value = ''; };
+$('#drop').addEventListener('dragover', e => { e.preventDefault(); $('#drop').classList.add('over'); });
+$('#drop').addEventListener('dragleave', () => $('#drop').classList.remove('over'));
+$('#drop').addEventListener('drop', e => { e.preventDefault(); $('#drop').classList.remove('over'); addFiles([...e.dataTransfer.files]); });
+$('#tripCancel').onclick = () => tripDlg.close();
+$('#tripForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const country = $('#fCountry').value, start = $('#fStart').value, end = $('#fEnd').value;
+  if (!country || !start) return;
+  if (end && end < start) { toast('“To” date is before “From”'); return; }
+  const ids = [];
+  for (const p of form.photos) {
+    if (p.isNew) { const id = uid(); await putPhoto(id, p.data); URL.revokeObjectURL(p.url); ids.push(id); }
+    else ids.push(p.id);
+  }
+  for (const o of form.orig) if (!ids.includes(o)) await delPhoto(o);
+  const rec = {country, place:$('#fPlace').value.trim(), start, end, who:document.querySelector('input[name=who]:checked').value, note:$('#fNote').value.trim(), photos:ids};
+  if (form.id) Object.assign(state.trips.find(t => t.id === form.id), rec);
+  else state.trips.push({id:uid(), created:Date.now(), ...rec});
+  await saveState();
+  tripDlg.close();
+  refresh();
+  toast(form.id ? 'Visit updated' : `${country} scratched off! 🎉`);
+  if (!form.id) { selectCountry(country); }
+});
+$('#addBtn').onclick = () => openTripDlg();
+
+/* ───────────── lightbox ───────────── */
+let lb = {ids:[], i:0};
+async function openLightbox(ids, i) {
+  lb = {ids, i}; showLb(); $('#lightbox').classList.add('on');
+}
+async function showLb() {
+  const id = lb.ids[lb.i];
+  $('#lbImg').src = thumbURL[id] || '';
+  $('#lbImg').src = await getFullPhoto(id);
+  $('#lbP').style.display = $('#lbN').style.display = lb.ids.length > 1 ? '' : 'none';
+}
+const lbStep = d => { lb.i = (lb.i + d + lb.ids.length) % lb.ids.length; showLb(); };
+$('#lbP').onclick = e => { e.stopPropagation(); lbStep(-1); };
+$('#lbN').onclick = e => { e.stopPropagation(); lbStep(1); };
+$('#lbX').onclick = $('#lightbox').onclick = () => $('#lightbox').classList.remove('on');
+$('#lbImg').onclick = e => e.stopPropagation();
+
+/* ───────────── settings / backup ───────────── */
+const setDlg = $('#setDlg');
+$('#setBtn').onclick = () => { $('#nameA').value = state.names.a; $('#nameB').value = state.names.b; setDlg.showModal(); };
+setDlg.addEventListener('close', async () => {
+  state.names.a = $('#nameA').value.trim() || 'Me';
+  state.names.b = $('#nameB').value.trim() || 'Partner';
+  await saveState(); refresh();
+});
+const blobToData = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
+async function exportData() {
+  const photos = {};
+  for (const t of state.trips) for (const id of t.photos || []) {
+    const d = db ? await idb('photos', 'readonly', s => s.get(id)) : memPhotos[id];
+    if (d) photos[id] = {full:await blobToData(d.full), thumb:await blobToData(d.thumb)};
+  }
+  return {app:'scratch-globe', version:1, names:state.names, trips:state.trips, photos};
+}
+async function importData(data) {
+  if (!data || !Array.isArray(data.trips)) throw new Error('Not a Scratch Globe backup');
+  for (const id of Object.keys(thumbURL)) await delPhoto(id);
+  for (const [id, p] of Object.entries(data.photos || {})) {
+    await putPhoto(id, {full:await (await fetch(p.full)).blob(), thumb:await (await fetch(p.thumb)).blob()});
+  }
+  state = {names:{a:'Me', b:'Partner', ...(data.names || {})}, trips:data.trips};
+  await saveState(); refresh();
+}
+$('#expBtn').onclick = async () => {
+  const blob = new Blob([JSON.stringify(await exportData())], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `scratch-globe-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+};
+$('#impBtn').onclick = () => $('#impFile').click();
+$('#impFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  if (!confirm('Importing replaces everything currently saved here. Continue?')) return;
+  try { await importData(JSON.parse(await f.text())); toast('Backup restored'); } catch (err) { toast('Import failed: ' + err.message); }
+};
+$('#wipeBtn').onclick = async () => {
+  if (!confirm('Erase all trips and photos? This cannot be undone.')) return;
+  await importData({trips:[], names:state.names, photos:{}}); toast('Erased');
+};
+
+/* ───────────── journey animation ───────────── */
+const J = {active:false, playing:false, stops:[], legs:[], i:0, shown:0, phase:'goto', t:0, speed:1, done:false, from:null, capKey:''};
+const DWELL = 2600;
+const SPEEDS = [.5, 1, 2, 4];
+
+function startJourney() {
+  const stops = sortedTrips().map(t => ({trip:t, c:centroid.get(t.country)})).filter(s => s.c);
+  if (!stops.length) { toast('Add a visit first, then watch your journey!'); return; }
+  closePanel();
+  Object.assign(J, {active:true, playing:true, stops, done:false, capKey:''});
+  J.legs = stops.slice(1).map((s, k) => {
+    const a = stops[k].c, b = s.c;
+    return {interp:d3.geoInterpolate(a, b), dist:d3.geoDistance(a, b)};
+  });
+  $('#track').innerHTML = `<div class="fill"></div>` + stops.map((s, i) => `<button data-i="${i}" title="${esc(s.trip.country)} · ${fmtDate(s.trip.start)}"></button>`).join('');
+  $('#jbar').classList.add('on'); $('#legend').style.display = 'none';
+  $('#hint').classList.add('hide');
+  cam.target = null; autoRotate = false;
+  gotoStop(0);
+  syncNav();
+}
+function exitJourney() {
+  J.active = false; J.playing = false;
+  $('#jbar').classList.remove('on'); $('#legend').style.display = ''; $('#cap').classList.remove('on');
+  cam.zoom = Math.min(cam.zoom, 1.2);
+  syncNav(); refresh();
+}
+function gotoStop(i) {
+  J.i = clamp(i, 0, J.stops.length - 1); J.shown = J.i; J.phase = 'goto'; J.t = 0; J.done = false;
+  J.from = {rot:[...cam.rot], zoom:cam.zoom};
+  J.capKey = ''; updateJUI();
+}
+function stepJourney(dt) {
+  const s = J.stops[J.i];
+  if (J.phase === 'goto') {
+    J.t += dt; const k = ease(clamp(J.t / 1500, 0, 1)), c = s.c;
+    cam.rot[0] = J.from.rot[0] + wrap180(-c[0] - J.from.rot[0]) * k;
+    cam.rot[1] = J.from.rot[1] + (-c[1] - J.from.rot[1]) * k;
+    cam.zoom = J.from.zoom + (J.zoomAt(s) - J.from.zoom) * k;
+    if (J.t >= 1500) { J.phase = 'dwell'; J.t = 0; J.shown = J.i + 1; updateJUI(); }
+  } else if (J.phase === 'dwell') {
+    if (!J.playing) return;
+    J.t += dt * J.speed;
+    if (J.t >= DWELL) {
+      if (J.i < J.stops.length - 1) { J.phase = 'fly'; J.t = 0; updateJUI(); }
+      else { J.playing = false; J.done = true; updateJUI(); }
+    }
+  } else if (J.phase === 'fly') {
+    if (!J.playing) return;
+    const leg = J.legs[J.i], dur = clamp(1800 + leg.dist * 2400, 1800, 5200);
+    J.t += dt * J.speed;
+    const k = clamp(J.t / dur, 0, 1), e = ease(k), p = leg.interp(e);
+    const far = clamp(leg.dist / 1.1, .35, 1);
+    cam.rot[0] = -p[0]; cam.rot[1] = -p[1];
+    const z0 = J.zoomAt(J.stops[J.i]), z1 = J.zoomAt(J.stops[J.i + 1]);
+    cam.zoom = (z0 + (z1 - z0) * e) * (1 - .38 * Math.sin(Math.PI * k) * far);
+    if (k >= 1) { J.i++; J.shown = J.i + 1; J.phase = 'dwell'; J.t = 0; updateJUI(); }
+  }
+}
+J.zoomAt = s => clamp(.1 / Math.sqrt(areaOf.get(s.trip.country) || .01), 1.1, 2.4);
+
+function updateJUI() {
+  const n = J.stops.length, s = J.stops[J.i];
+  $('#jPlay').textContent = J.done ? '↻' : (J.playing ? '⏸' : '▶');
+  $('#jSpeed').textContent = J.speed + '×';
+  document.querySelectorAll('#track button').forEach((b, i) => { b.classList.toggle('done', i < J.shown); b.classList.toggle('cur', i === J.i && J.phase !== 'fly'); });
+  const f = $('#track .fill'); if (f) f.style.width = `calc(${n > 1 ? (Math.max(0, J.shown - 1) / (n - 1)) * 100 : 100}% - 12px)`;
+  const cap = $('#cap');
+  let html = '';
+  if (J.phase === 'fly') {
+    const nx = J.stops[J.i + 1];
+    html = `<div class="n">✈ Travelling</div><h3>${esc(s.trip.country)} → ${esc(nx.trip.country)}</h3><div class="sub">${fmtDate(nx.trip.start)}</div>`;
+  } else if (J.phase === 'dwell') {
+    const t = s.trip, ph = (t.photos || [])[0];
+    html = `<div class="n">Stop ${J.i + 1} of ${n}</div><h3>${esc(t.country)}</h3><div class="sub">${t.place ? esc(t.place) + ' · ' : ''}${fmtRange(t)} · ${esc(whoLabel(t.who))}</div>${t.note ? `<p>${esc(t.note)}</p>` : ''}${ph ? `<img src="${thumbURL[ph]}" alt="">` : ''}`;
+    if (J.done) html += `<p class="sub" style="margin-top:10px">🏁 That's the whole adventure — ${new Set(J.stops.map(x => x.trip.country)).size} countries together. Press ↻ to replay.</p>`;
+  }
+  if (J.capKey !== html) { J.capKey = html; cap.innerHTML = html; cap.classList.toggle('on', !!html); }
+}
+function drawJourney(now) {
+  const n = J.shown;
+  // trail
+  const done = J.phase === 'fly' ? J.i : n - 1;
+  ctx.lineCap = 'round';
+  const trail = pts => {
+    ctx.beginPath(); path({type:'LineString', coordinates:pts});
+    ctx.strokeStyle = 'rgba(255,200,220,.32)'; ctx.lineWidth = 7; ctx.stroke();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6; ctx.setLineDash([2, 5]); ctx.stroke(); ctx.setLineDash([]);
+  };
+  for (let k = 0; k < done; k++) { const l = J.legs[k]; trail(d3.range(0, 1.0001, 1 / 40).map(l.interp)); }
+  let plane = null;
+  if (J.phase === 'fly') {
+    const l = J.legs[J.i], dur = clamp(1800 + l.dist * 2400, 1800, 5200), e = ease(clamp(J.t / dur, 0, 1));
+    trail(d3.range(0, e + 1e-6, Math.max(e / 40, .002)).map(l.interp));
+    plane = {p:l.interp(e), q:l.interp(Math.min(1, e + .02)), back:e > .97 ? l.interp(Math.max(0, e - .02)) : null};
+  }
+  // stop markers
+  for (let i = 0; i < n; i++) {
+    const c = J.stops[i].c; if (!visible(c)) continue;
+    const [x, y] = proj(c);
+    const cur = i === J.i && J.phase !== 'fly';
+    ctx.fillStyle = COLORS[J.stops[i].trip.who]; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, cur ? 11 : 8, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#10142e'; ctx.font = `700 ${cur ? 11 : 9}px Inter,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(i + 1, x, y + .5);
+    if (cur) { // pulse
+      const ph = (now % 1600) / 1600;
+      ctx.strokeStyle = `rgba(255,255,255,${1 - ph})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 11 + ph * 22, 0, 7); ctx.stroke();
+    }
+  }
+  if (plane && visible(plane.p)) {
+    const [x, y] = proj(plane.p);
+    const q = plane.back ? proj(plane.back) : proj(plane.q);
+    let ang = Math.atan2(q[1] - y, q[0] - x); if (plane.back) ang += Math.PI;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    ctx.shadowColor = '#fff'; ctx.shadowBlur = 18; ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(-9, -8); ctx.lineTo(-4, 0); ctx.lineTo(-9, 8); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+}
+$('#jPlay').onclick = () => {
+  if (J.done) { gotoStop(0); J.playing = true; }
+  else J.playing = !J.playing;
+  updateJUI();
+};
+$('#jPrev').onclick = () => gotoStop(J.phase === 'fly' || J.phase === 'goto' ? J.i : J.i - 1);
+$('#jNext').onclick = () => gotoStop(J.phase === 'fly' ? J.i + 1 : J.i + 1);
+$('#jSpeed').onclick = () => { J.speed = SPEEDS[(SPEEDS.indexOf(J.speed) + 1) % SPEEDS.length]; updateJUI(); };
+$('#jExit').onclick = exitJourney;
+$('#track').addEventListener('click', e => { const b = e.target.closest('button'); if (b) gotoStop(+b.dataset.i); });
+
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (J.active) exitJourney(); else if (panelOpen && !document.querySelector('dialog[open]')) closePanel(); $('#lightbox').classList.remove('on'); }
+  if ($('#lightbox').classList.contains('on')) { if (e.key === 'ArrowLeft') lbStep(-1); if (e.key === 'ArrowRight') lbStep(1); }
+  if (J.active && e.key === ' ' && !document.querySelector('dialog[open]')) { e.preventDefault(); $('#jPlay').click(); }
+});
+
+/* ───────────── boot ───────────── */
+(async function boot() {
+  resize();
+  try {
+    const [topo] = await Promise.all([
+      fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json').then(r => r.json()),
+      loadAll()
+    ]);
+    prepGeo(topo);
+  } catch (e) {
+    $('#loading').textContent = 'Could not load map data — check your internet connection and reload.';
+    console.error(e); return;
+  }
+  refresh();
+  requestAnimationFrame(frame);
+  $('#loading').classList.add('done');
+  // gentle intro spin
+  cam.zoom = .7; cam.target = {rot:cam.rot.slice(), zoom:1};
+  window.app = {get state() { return state; }, importData, exportData, startJourney, selectCountry, centroid};
+})();
+})();
+</script>
+</body>
+</html>
