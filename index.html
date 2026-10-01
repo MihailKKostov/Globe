@@ -198,8 +198,16 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
 .invite input{flex:1;font-size:14px}
 .hero{text-align:center;padding:18px 6px;line-height:1.55}
 .hero p{margin:0 0 14px}
-.gbtn{display:inline-flex;gap:10px;align-items:center;font-size:17px;padding:9px 18px}
-.gbtn b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#fbf4e2;color:var(--wax);font-family:Georgia,serif;font-weight:700;font-size:15px}
+.authform{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.authform .btn.primary{font-size:17px;padding:8px 16px}
+.autherr{color:var(--wax);font-style:italic}
+.linkbtn{background:none;border:0;padding:0;color:var(--ink2);text-decoration:underline dotted;text-underline-offset:3px;font-style:italic;align-self:flex-start}
+.notice{background:rgba(192,138,46,.12);border:1px solid rgba(192,138,46,.45);border-radius:3px;padding:10px 12px;margin:12px 0;line-height:1.45}
+.notice .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.invrow{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px dotted var(--line);flex-wrap:wrap}
+.invrow .nm{flex:1;min-width:150px}
+.invrow small{display:block;color:var(--ink2);font-style:italic}
+#acctBtn .badge{margin-left:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--wax);color:#fbf4e2;font-size:12px;font-style:normal;display:inline-grid;place-items:center;line-height:1}
 
 @media (max-width:800px){
   header{padding:10px 12px;flex-wrap:wrap;gap:2px 10px}
@@ -343,7 +351,7 @@ let db = null;
 const localThumbs = {};       // photo id -> object URL (thumbnail), private globe
 let cloudThumbs = {};         // photo id -> data URL (thumbnail), shared globe
 const memPhotos = {};         // fallback if IndexedDB is unavailable
-const cloud = {fb:null, started:false, user:null, globes:{}, gid:null, globe:null, members:[], unsub:[]};
+const cloud = {fb:null, started:false, user:null, pendingName:'', globes:{}, gid:null, globe:null, members:[], unsub:[], invites:[], inviteUnsub:null, globeInvites:[]};
 const thumbOf = id => (cloud.gid ? cloudThumbs : localThumbs)[id] || '';
 const ls = {
   get:k => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -442,7 +450,7 @@ let people = [];
 function computePeople() {
   people = cloud.gid
     ? cloud.members.map(m => ({id:m.id, name:m.name || 'Traveller', color:m.color || '#8a7155', photo:m.photo || '', lastActive:m.lastActive, me:!!cloud.user && m.id === cloud.user.uid}))
-    : [{id:'a', name:(cloud.user && cloud.user.displayName) || state.names.a, color:PALETTE[0], me:true}];
+    : [{id:'a', name:myName(), color:PALETTE[0], me:true}];
 }
 const person = id => people.find(p => p.id === id);
 const whoIds = t => !cloud.gid ? ['a'] : Array.isArray(t.who) ? t.who : [t.who];   // on the private globe every trip is yours
@@ -999,6 +1007,11 @@ function renderList() {
     return `<div class="row" data-act="country" data-c="${esc(n)}"><i class="dot" style="${w ? 'background:' + colorOf(w) : ''}"></i><div class="nm"><b>${esc(n)}</b><small>${ts.length ? `${ts.length} visit${ts.length > 1 ? 's' : ''} · last ${fmtDate(last.start)}` : 'Uncharted'}</small></div><span class="sub">›</span></div>`;
   }).join('');
 }
+$('#panelBody').addEventListener('submit', e => {
+  e.preventDefault();
+  if (e.target.id === 'authForm') authSubmit(e.target.dataset.kind);
+  else if (e.target.id === 'inviteForm' && inviteByEmail($('#inviteEmail').value)) $('#inviteEmail').value = '';
+});
 $('#panelBody').addEventListener('input', e => { if (e.target.id === 'q') { listQuery = e.target.value; renderList(); } });
 $('#panelBody').addEventListener('click', e => {
   const f = e.target.closest('[data-f]');
@@ -1145,7 +1158,7 @@ $('#setBtn').onclick = () => {
   $('#sharedNote').hidden = !cloud.user;
   $('#sharedNote').textContent = cloud.gid
     ? `You're on the shared globe “${cloud.globes[cloud.gid] || 'Shared globe'}”. Pin settings below apply to everyone on it.`
-    : 'Your name comes from your Google account.';
+    : 'Your name comes from your account; change it on the Friends page.';
   renderPinSettings(); setDlg.showModal();
 };
 setDlg.addEventListener('click', e => {
@@ -1198,7 +1211,7 @@ $('#wipeBtn').onclick = async () => {
 };
 
 
-/* ───────────── shared globes: Google sign-in + Firestore ───────────── */
+/* ───────────── shared globes: email sign-in + Firestore ───────────── */
 const CFG = window.FIREBASE_CONFIG || null;
 const FB_VER = '12.19.0';
 const ONLINE_MS = 150000;     // seen within 2½ minutes = exploring the globe right now
@@ -1232,30 +1245,105 @@ async function startCloud() {
     if (u) {
       ls.set('sg-auth', '1');
       await loadMyGlobes();
+      watchInvites();
       const pending = ls.get('sg-join');
       if (pending) { ls.del('sg-join'); await joinGlobe(pending); }
       else { const g = ls.get('sg-active'); if (g && cloud.globes[g] && cloud.gid !== g) openGlobe(g); }
     } else {
-      ls.del('sg-auth'); cloud.globes = {};
+      ls.del('sg-auth'); cloud.globes = {}; cloud.pendingName = ''; authTab = 'signin';
+      watchInvites();
       if (cloud.gid) useLocal(false);
     }
     scheduleRefresh();
   });
 }
-async function signIn() {
-  if (!CFG) return;
+const AUTH_ERRORS = {
+  'auth/invalid-credential':'Wrong email or password.', 'auth/wrong-password':'Wrong email or password.',
+  'auth/user-not-found':'There is no account with that email yet. Create one instead?',
+  'auth/email-already-in-use':'There is already an account with that email. Sign in instead?',
+  'auth/weak-password':'Please choose a password of at least 6 characters.', 'auth/missing-password':'Please enter your password.',
+  'auth/invalid-email':'That email address does not look right.', 'auth/missing-email':'Please enter your email address.',
+  'auth/too-many-requests':'Too many attempts. Please wait a few minutes and try again.',
+  'auth/network-request-failed':'No connection. Check your internet and try again.',
+  'auth/operation-not-allowed':'Email sign-in is not switched on in Firebase yet (Authentication → Sign-in method → Email/Password).',
+};
+let authTab = 'signin', authError = '', authDraft = {name:'', email:''};
+const myName = () => cloud.user ? (cloud.user.displayName || cloud.pendingName || (cloud.user.email || 'Traveller').split('@')[0]) : localState.names.a;
+async function authSubmit(kind) {
+  const val = id => ($(id) ? $(id).value : '');
+  authDraft = {name:val('#aName').trim(), email:val('#aEmail').trim().toLowerCase()};
+  const pass = val('#aPass');
+  authError = '';
   await startCloud();
   if (!cloud.fb) return;
   const {auth, au} = cloud.fb;
-  const provider = new auth.GoogleAuthProvider();
-  provider.setCustomParameters({prompt:'select_account'});
-  try { await auth.signInWithPopup(au, provider); }
-  catch (e) {
-    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') await auth.signInWithRedirect(au, provider);
-    else if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') toast('Sign-in failed: ' + (e.code || e.message));
+  try {
+    if (kind === 'signup') {
+      if (!authDraft.name) throw {code:'x', message:'Please tell us your name; it is what your friends will see.'};
+      cloud.pendingName = authDraft.name;
+      const cred = await auth.createUserWithEmailAndPassword(au, authDraft.email, pass);
+      await auth.updateProfile(cred.user, {displayName:authDraft.name});
+      auth.sendEmailVerification(cred.user).catch(console.error);
+      toast(`Welcome, ${authDraft.name}! Check your inbox to verify your email.`);
+    } else if (kind === 'signin') {
+      await auth.signInWithEmailAndPassword(au, authDraft.email, pass);
+    } else if (kind === 'reset') {
+      if (!authDraft.email) throw {code:'auth/missing-email'};
+      await auth.sendPasswordResetEmail(au, authDraft.email);
+      toast('If that email has an account, a reset link is on its way.');
+    }
+    authTab = 'signin'; authError = '';
+  } catch (e) {
+    if (kind === 'reset' && e.code === 'auth/user-not-found') toast('If that email has an account, a reset link is on its way.');   // don't reveal who has an account
+    else authError = AUTH_ERRORS[e.code] || e.message || e.code;
+    if (e.code === 'auth/email-already-in-use') authTab = 'signin';
   }
+  renderPanel();
+}
+async function recheckVerified() {
+  const u = cloud.user;
+  try { await u.reload(); await u.getIdToken(true); } catch (e) { console.error(e); }
+  watchInvites(); scheduleRefresh();
+  toast(u.emailVerified ? 'Email verified, thank you!' : 'Not verified yet. Check your inbox and spam folder.');
 }
 const signOutCloud = () => cloud.fb && cloud.fb.auth.signOut(cloud.fb.au);
+
+/* invitations addressed to my email; only readable once the email is verified (see firestore.rules) */
+function watchInvites() {
+  if (cloud.inviteUnsub) { cloud.inviteUnsub(); cloud.inviteUnsub = null; }
+  cloud.invites = [];
+  const u = cloud.user;
+  if (!u || !u.emailVerified || !u.email) return;
+  const {fs, fdb} = cloud.fb;
+  cloud.inviteUnsub = fs.onSnapshot(fs.query(fs.collection(fdb, 'invites'), fs.where('email', '==', u.email.toLowerCase())), q => {
+    cloud.invites = [];
+    for (const d of q.docs) {
+      if (cloud.globes[d.data().gid]) fs.deleteDoc(d.ref).catch(() => {});   // already on that globe
+      else cloud.invites.push({id:d.id, ...d.data()});
+    }
+    scheduleRefresh();
+  }, e => console.error(e));
+}
+async function acceptInvite(inv) {
+  await joinGlobe(inv.gid);
+  cloud.fb.fs.deleteDoc(cloud.fb.fs.doc(cloud.fb.fdb, 'invites', inv.id)).catch(() => {});
+}
+function inviteByEmail(raw) {
+  const email = (raw || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('That email address does not look right'); return false; }
+  if (cloud.members.some(m => m.email === email)) { toast('They are already on this globe'); return false; }
+  const {fs, fdb} = cloud.fb, gid = cloud.gid;
+  fs.setDoc(fs.doc(fdb, 'invites', gid + '_' + email), {
+    email, gid, globeName:cloud.globes[gid] || 'Shared globe', from:cloud.user.uid, fromName:myName(), created:fs.serverTimestamp(),
+  }).catch(cloudErr);
+  toast(`Invitation sent to ${email}`);
+  return true;
+}
+const inviteMail = inv => {
+  const app = location.origin + location.pathname;
+  const body = `${myName()} has invited you to “${inv.globeName}”, a shared scratch globe of our travels.\n\nOpen ${app} , tap Sign in, and sign in or create an account with this email address (${inv.email}). The invitation will be waiting for you.`;
+  return `mailto:${encodeURIComponent(inv.email)}?subject=${encodeURIComponent('Join ' + inv.globeName + ' on Our Scratch Globe')}&body=${encodeURIComponent(body)}`;
+};
 
 async function loadMyGlobes() {
   const {fs, fdb} = cloud.fb;
@@ -1283,7 +1371,7 @@ async function createGlobe(name) {
 function addMeAsMember(gid) {
   const {fs, fdb} = cloud.fb, u = cloud.user;
   return fs.setDoc(fs.doc(fdb, 'globes', gid, 'members', u.uid), {
-    name:u.displayName || (u.email || 'Traveller').split('@')[0], photo:u.photoURL || '',
+    name:myName(), email:(u.email || '').toLowerCase(), photo:'',
     color:PALETTE[0],   // fixMyColour() moves later joiners onto a free colour
     joined:fs.serverTimestamp(), lastActive:fs.serverTimestamp()});
 }
@@ -1305,7 +1393,7 @@ function openGlobe(gid) {
   stopListeners();
   const {fs, fdb} = cloud.fb;
   if (J.active) exitJourney();
-  cloud.gid = gid; cloud.globe = {name:cloud.globes[gid]}; cloud.members = []; cloudThumbs = {};
+  cloud.gid = gid; cloud.globe = {name:cloud.globes[gid]}; cloud.members = []; cloud.globeInvites = []; cloudThumbs = {};
   state = {names:defaults().names, trips:[], pins:defaults().pins, countries:{}};
   ls.set('sg-active', gid);
   const opts = {serverTimestamps:'estimate'};
@@ -1327,8 +1415,11 @@ function openGlobe(gid) {
     }, fail),
     fs.onSnapshot(fs.collection(fdb, 'globes', gid, 'members'), q => {
       cloud.members = q.docs.map(d => ({id:d.id, ...d.data(opts)})).sort((a, b) => msOf(a.joined) - msOf(b.joined));
-      fixMyColour(); scheduleRefresh();
+      fixMyColour(); syncMyProfile(); scheduleRefresh();
     }, fail),
+    fs.onSnapshot(fs.query(fs.collection(fdb, 'invites'), fs.where('gid', '==', gid)), q => {
+      cloud.globeInvites = q.docs.map(d => ({id:d.id, ...d.data()})); scheduleRefresh();
+    }, e => console.error(e)),
     fs.onSnapshot(fs.collection(fdb, 'globes', gid, 'trips'), q => {
       state.trips = q.docs.map(d => ({...d.data(), id:d.id})); scheduleRefresh();
     }, fail),
@@ -1342,7 +1433,7 @@ function openGlobe(gid) {
 function useLocal(forget) {
   stopListeners();
   if (J.active) exitJourney();
-  cloud.gid = null; cloud.members = []; cloud.globe = null; cloudThumbs = {};
+  cloud.gid = null; cloud.members = []; cloud.globeInvites = []; cloud.globe = null; cloudThumbs = {};
   state = localState;
   if (forget) ls.del('sg-active');
   scheduleRefresh();
@@ -1361,6 +1452,12 @@ function heartbeat() {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && cloud.gid) heartbeat(); });
 setInterval(() => { if (cloud.gid) { updateAcct(); if (panelOpen && mode === 'people') renderPanel(); } }, 30000);
 
+function syncMyProfile() {
+  const me = cloud.user && cloud.members.find(m => m.id === cloud.user.uid);
+  if (!me) return;
+  const name = myName(), email = (cloud.user.email || '').toLowerCase();
+  if (me.name !== name || me.email !== email) setMyMember({name, email});
+}
 const setMyMember = patch => cloud.fb.fs.updateDoc(cdoc('members', cloud.user.uid), patch).catch(cloudErr);
 function fixMyColour() {   // two people who share a colour would be indistinguishable on the map
   if (!cloud.user) return;
@@ -1446,28 +1543,40 @@ const relTime = ms => {
 };
 function updateAcct() {
   const b = $('#acctBtn');
+  const badge = cloud.invites && cloud.invites.length ? `<i class="badge" title="Invitations waiting">${cloud.invites.length}</i>` : '';
   if (!cloud.user) { b.innerHTML = `${PEOPLE_ICON}<span class="lbl long">${CFG ? 'Sign in' : 'Friends'}</span>`; return; }
-  if (!cloud.gid) { b.innerHTML = `${avatar({name:cloud.user.displayName, photo:cloud.user.photoURL, color:'#6b5236'})}<span class="lbl long">Private</span>`; return; }
+  if (!cloud.gid) { b.innerHTML = `${avatar({name:myName(), color:'#6b5236'})}<span class="lbl long">Private</span>${badge}`; return; }
   const on = people.filter(isOnline);
   const shown = [...on, ...people.filter(p => !isOnline(p))].slice(0, 3);
-  b.innerHTML = shown.map(p => avatar(p, isOnline(p))).join('') + (on.length > 1 ? `<span class="lbl">${on.length} here</span>` : '');
+  b.innerHTML = shown.map(p => avatar(p, isOnline(p))).join('') + (on.length > 1 ? `<span class="lbl">${on.length} here</span>` : '') + badge;
   b.title = `${people.length} on this globe, ${on.length} exploring now`;
 }
 function renderPeople(body, title) {
   title.textContent = cloud.gid ? (cloud.globes[cloud.gid] || 'Shared globe') : 'Friends';
   if (!CFG) {
-    body.innerHTML = `<div class="hero"><p>Shared globes let friends sign in with Google and scratch off their travels on one globe together.</p><p class="sub">This needs a one-time setup of a free Firebase project. The steps are in the README.</p></div>`;
+    body.innerHTML = `<div class="hero"><p>Shared globes let friends sign in and scratch off their travels on one globe together.</p><p class="sub">This needs a one-time setup of a free Firebase project. The steps are in the README.</p></div>`;
     return;
   }
   if (!cloud.user) {
-    body.innerHTML = `<div class="hero">
-      <p>${ls.get('sg-join') ? 'You have been invited to join a shared globe.' : "Sign in to make a shared globe with friends. Everyone scratches off their own adventures, and you all see each other's trips, notes and photographs."}</p>
-      <button class="btn primary gbtn" data-act="signin"><b>G</b>Sign in with Google</button>
-      <p class="sub" style="margin-top:14px">Your private globe stays on this device. Nothing is shared until you choose to.</p></div>`;
+    const up = authTab === 'signup';
+    body.innerHTML = `<p class="sub" style="margin-top:0">${ls.get('sg-join') ? 'You have been invited to join a shared globe. Sign in or create an account to join.' : "Sign in to share a globe with friends: everyone scratches off their own adventures, and you all see each other's trips, notes and photographs."}</p>
+      <div class="seg"><button data-act="authtab" data-tab="signin" class="${up ? '' : 'on'}">Sign in</button><button data-act="authtab" data-tab="signup" class="${up ? 'on' : ''}">Create account</button></div>
+      <form class="authform" id="authForm" data-kind="${up ? 'signup' : 'signin'}">
+        ${up ? `<label>Your name<input type="text" id="aName" autocomplete="name" maxlength="30" value="${esc(authDraft.name)}" required></label>` : ''}
+        <label>Email<input type="email" id="aEmail" autocomplete="email" inputmode="email" value="${esc(authDraft.email)}" required></label>
+        <label>Password<input type="password" id="aPass" autocomplete="${up ? 'new-password' : 'current-password'}" minlength="6" required></label>
+        ${authError ? `<div class="autherr">${esc(authError)}</div>` : ''}
+        <button class="btn primary" type="submit">${up ? 'Create account' : 'Sign in'}</button>
+        ${up ? '' : '<button type="button" class="linkbtn" data-act="reset">Forgot your password?</button>'}
+      </form>
+      <p class="sub" style="margin-top:16px">Your private globe stays on this device. Nothing is shared until you choose to.</p>`;
     return;
   }
   const u = cloud.user, gids = Object.keys(cloud.globes);
-  let h = `<div class="me-row">${avatar({name:u.displayName, photo:u.photoURL, color:'#6b5236'})}<div class="nm"><b>${esc(u.displayName || 'Signed in')}</b><small>${esc(u.email || '')}</small></div><button class="btn small" data-act="signout">Sign out</button></div>
+  let h = `<div class="me-row">${avatar({name:myName(), color:'#6b5236'})}<div class="nm"><b>${esc(myName())}</b><small>${esc(u.email || '')}</small></div><button class="btn small" data-act="rename">Edit name</button><button class="btn small" data-act="signout">Sign out</button></div>
+    ${u.emailVerified ? '' : `<div class="notice">Please verify your email: we sent a link to <b>${esc(u.email)}</b>. Invitations from friends show up here once it is verified.
+      <div class="acts"><button class="btn small" data-act="verified">I've verified it</button><button class="btn small" data-act="resend">Send the link again</button></div></div>`}
+    ${(cloud.invites || []).length ? `<div class="globes"><h5>Invitations</h5>${cloud.invites.map(i => `<div class="invrow"><div class="nm"><b>${esc(i.globeName)}</b><small>from ${esc(i.fromName || 'a friend')}</small></div><button class="btn small primary" data-act="accept" data-id="${esc(i.id)}">Join</button><button class="btn small" data-act="decline" data-id="${esc(i.id)}">Decline</button></div>`).join('')}</div>` : ''}
     <div class="globes"><h5>Your globes</h5>
       <div class="row ${cloud.gid ? '' : 'on'}" data-act="useglobe" data-g=""><div class="nm"><b>Private globe</b><small>only on this device</small></div></div>
       ${gids.map(g => `<div class="row ${cloud.gid === g ? 'on' : ''}" data-act="useglobe" data-g="${esc(g)}"><div class="nm"><b>${esc(cloud.globes[g])}</b><small>shared</small></div></div>`).join('')}
@@ -1480,7 +1589,11 @@ function renderPeople(body, title) {
     const owner = cloud.globe && cloud.globe.owner === u.uid;
     const me = people.find(p => p.me);
     h += `<div class="rule"></div><div class="people">
-      <h5>Invite friends</h5>
+      <h5>Invite someone</h5>
+      <form class="invite" id="inviteForm"><input type="email" id="inviteEmail" placeholder="their@email.com" inputmode="email" autocomplete="off" required><button class="btn small primary" type="submit">Invite</button></form>
+      <p class="sub">They'll find the invitation under Friends when they sign in with that email, even if they create their account later.</p>
+      ${(cloud.globeInvites || []).map(i => `<div class="invrow"><div class="nm">${esc(i.email)}<small>invited by ${esc(i.fromName || 'a friend')} · waiting</small></div><a class="btn small" href="${inviteMail(i)}">Email them</a><button class="btn small" data-act="uninvite" data-id="${esc(i.id)}">Cancel</button></div>`).join('')}
+      <h5>Or share a link</h5>
       <div class="invite"><input type="text" readonly value="${esc(link)}" id="inviteLink"><button class="btn small" data-act="invite">${navigator.share ? 'Share' : 'Copy'}</button></div>
       <p class="sub">Anyone with this link can sign in and join.</p>
       <h5>Travellers on this globe · ${list.filter(isOnline).length} exploring now</h5>
@@ -1496,7 +1609,18 @@ function renderPeople(body, title) {
   body.innerHTML = h;
 }
 async function peopleAction(act, el) {
-  if (act === 'signin') signIn();
+  const {fs, fdb} = cloud.fb || {};
+  if (act === 'authtab') { authTab = el.dataset.tab; authError = ''; renderPanel(); }
+  else if (act === 'reset') authSubmit('reset');
+  else if (act === 'verified') recheckVerified();
+  else if (act === 'resend') { cloud.fb.auth.sendEmailVerification(cloud.user).then(() => toast('Sent. Check your inbox.'), e => toast(AUTH_ERRORS[e.code] || e.code)); }
+  else if (act === 'rename') {
+    const name = (prompt('Your name, as friends will see it', myName()) || '').trim().slice(0, 30);
+    if (name) { await cloud.fb.auth.updateProfile(cloud.user, {displayName:name}); syncMyProfile(); scheduleRefresh(); }
+  }
+  else if (act === 'accept') { const inv = cloud.invites.find(i => i.id === el.dataset.id); if (inv) acceptInvite(inv); }
+  else if (act === 'decline') fs.deleteDoc(fs.doc(fdb, 'invites', el.dataset.id)).catch(cloudErr);
+  else if (act === 'uninvite') fs.deleteDoc(fs.doc(fdb, 'invites', el.dataset.id)).catch(cloudErr);
   else if (act === 'signout') { if (confirm('Sign out? Your private globe stays on this device.')) await signOutCloud(); }
   else if (act === 'useglobe') { if (el.dataset.g) openGlobe(el.dataset.g); else useLocal(true); }
   else if (act === 'newglobe') {
@@ -1690,11 +1814,6 @@ addEventListener('keydown', e => {
   if (ls.get('sg-join')) setMode('people');
   cam.zoom = .8; cam.target = {lam:cam.lam, zoom:1, pan:[0, 0]};
   window.app = {get state() { return state; }, get cloud() { return cloud; }, importData, exportData, startJourney, selectCountry, setMode};
-  if (CFG && CFG.emulators) app.testSignIn = async (name, email) => {   // local testing against the Firebase emulators only
-    await startCloud();
-    const {auth, au} = cloud.fb;
-    await auth.signInWithCredential(au, auth.GoogleAuthProvider.credential(JSON.stringify({sub:email, email, name, email_verified:true})));
-  };
 })();
 })();
 </script>

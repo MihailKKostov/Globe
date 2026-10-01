@@ -32,5 +32,20 @@ service cloud.firestore {
       match /photos/{id} { allow read, write: if isMember(gid); }
       match /photosFull/{id} { allow read, write: if isMember(gid); }
     }
+
+    // invitations by email: visible to members of that globe, and to the invited person
+    // once they have proved they own the address (verified email)
+    match /invites/{id} {
+      function isInvitee() {
+        return signedIn() && request.auth.token.email_verified == true
+          && resource.data.email == request.auth.token.email.lower();
+      }
+      allow read, delete: if isInvitee() || isMember(resource.data.gid);
+      allow create: if isMember(request.resource.data.gid)
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.email == request.resource.data.email.lower()
+        && id == request.resource.data.gid + '_' + request.resource.data.email;
+      allow update: if false;
+    }
   }
 }
