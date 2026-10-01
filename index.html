@@ -200,8 +200,6 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
 .hero p{margin:0 0 14px}
 .gbtn{display:inline-flex;gap:10px;align-items:center;font-size:17px;padding:9px 18px}
 .gbtn b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#fbf4e2;color:var(--wax);font-family:Georgia,serif;font-weight:700;font-size:15px}
-.copyform{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin:8px 0}
-.copyform span{font-style:italic;color:var(--ink2)}
 
 @media (max-width:800px){
   header{padding:10px 12px;flex-wrap:wrap;gap:2px 10px}
@@ -277,7 +275,7 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
       <label>From<input type="date" id="fStart" required></label>
       <label>To (optional)<input type="date" id="fEnd"></label>
     </div>
-    <label>Who went<div class="who" id="fWho"></div></label>
+    <label id="whoField">Who went<div class="who" id="fWho"></div></label>
     <label>Notes<textarea id="fNote" rows="4" placeholder="What do you want to remember? The best meal, the wrong turn, the sunset…"></textarea></label>
     <div>
       <div class="drop" id="drop">Add photographs: tap here or drop them in<input type="file" id="fFiles" accept="image/*" multiple hidden></div>
@@ -293,10 +291,7 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
 <dialog id="setDlg">
   <form method="dialog">
     <h2>Settings</h2>
-    <div class="two" id="namesBlock">
-      <label>Your name<input type="text" id="nameA" maxlength="20"></label>
-      <label>Your partner's name<input type="text" id="nameB" maxlength="20"></label>
-    </div>
+    <label id="namesBlock">Your name<input type="text" id="nameA" maxlength="30"></label>
     <div class="sub" id="sharedNote" hidden></div>
     <div class="rule"></div>
     <label class="toggle"><input type="checkbox" id="pinShow"> Put a pin on every scratched-off country</label>
@@ -332,7 +327,6 @@ const wrap180 = d => ((d % 360) + 540) % 360 - 180;
 const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
 const TOTAL_COUNTRIES = 195;
 const TOGETHER = '#a8323a';                       // countries visited by two or more people
-const LOCAL_COLORS = {a:'#2f6f73', b:'#c08a2e'};
 const PALETTE = ['#2f6f73', '#c08a2e', '#28466e', '#2f5d3a', '#6d3b6b', '#a0522d', '#b0576f', '#7a6a2e', '#3e7f9a', '#5b4a8a'];
 const INK = '#2e1f10';
 // like a desk globe: fixed viewing angle, axis leaning 23.5°, spins only around that axis
@@ -342,7 +336,7 @@ const PIN_NAMES = {pin:'Map pin', push:'Push pin', flag:'Flag', star:'Star', hea
 const PIN_COLORS = ['auto', '#8e2b2f', '#2b2118', '#b08d3c', '#2f5d3a', '#28466e', '#c2577a'];
 
 /* ───────────── state & storage ───────────── */
-const defaults = () => ({names:{a:'Me', b:'Partner'}, trips:[], pins:{show:true, style:'pin', color:'auto'}, countries:{}});
+const defaults = () => ({names:{a:'Me'}, trips:[], pins:{show:true, style:'pin', color:'auto'}, countries:{}});
 let localState = defaults();  // the private globe, kept in IndexedDB on this device
 let state = localState;       // whichever globe is showing: private, or a shared one from the cloud
 let db = null;
@@ -448,10 +442,10 @@ let people = [];
 function computePeople() {
   people = cloud.gid
     ? cloud.members.map(m => ({id:m.id, name:m.name || 'Traveller', color:m.color || '#8a7155', photo:m.photo || '', lastActive:m.lastActive, me:!!cloud.user && m.id === cloud.user.uid}))
-    : [{id:'a', name:state.names.a, color:LOCAL_COLORS.a, me:true}, {id:'b', name:state.names.b, color:LOCAL_COLORS.b}];
+    : [{id:'a', name:(cloud.user && cloud.user.displayName) || state.names.a, color:PALETTE[0], me:true}];
 }
 const person = id => people.find(p => p.id === id);
-const whoIds = t => Array.isArray(t.who) ? t.who : t.who === 'both' ? ['a', 'b'] : [t.who];
+const whoIds = t => !cloud.gid ? ['a'] : Array.isArray(t.who) ? t.who : [t.who];   // on the private globe every trip is yours
 const keyOfIds = ids => ids.length > 1 ? 'together' : ids[0];
 const tripKey = t => keyOfIds(whoIds(t));
 const colorOf = k => k === 'together' ? TOGETHER : (person(k) || {}).color || '#8a7155';
@@ -1050,7 +1044,7 @@ function updateStats() {
 }
 function updateLegend() {
   $('#legend').innerHTML = people.slice(0, 6).map(p => `<span><i style="background:${p.color}"></i>${esc(p.name)}</span>`).join('') +
-    `<span><i style="background:${TOGETHER}"></i>Together</span><span><i style="background:#efe0bb"></i>Uncharted</span>`;
+    (cloud.gid ? `<span><i style="background:${TOGETHER}"></i>Together</span>` : '') + `<span><i style="background:#efe0bb"></i>Uncharted</span>`;
 }
 
 /* ───────────── add / edit dialog ───────────── */
@@ -1066,7 +1060,8 @@ function openTripDlg({id, country} = {}) {
   $('#fStart').value = t ? t.start : new Date().toISOString().slice(0, 10);
   $('#fEnd').value = t ? t.end || '' : '';
   $('#fNote').value = t ? t.note || '' : '';
-  const chosen = new Set(t ? whoIds(t) : (cloud.gid ? [cloud.user.uid] : ['a', 'b']));
+  $('#whoField').hidden = !cloud.gid;
+  const chosen = new Set(t ? whoIds(t) : (cloud.gid ? [cloud.user.uid] : ['a']));
   const ids = [...new Set([...people.map(p => p.id), ...chosen])];
   $('#fWho').innerHTML = ids.map(i => `<label><input type="checkbox" name="who" value="${esc(i)}" ${chosen.has(i) ? 'checked' : ''}><i class="dot" style="background:${colorOf(i)}"></i>${esc(nameOf(i))}${cloud.gid && person(i) && person(i).me ? ' (you)' : ''}</label>`).join('');
   renderPThumbs();
@@ -1102,7 +1097,7 @@ $('#tripForm').addEventListener('submit', async e => {
   const country = $('#fCountry').value, start = $('#fStart').value, end = $('#fEnd').value;
   if (!country || !start) return;
   if (end && end < start) { toast('The “To” date is before the “From” date'); return; }
-  const who = [...document.querySelectorAll('input[name=who]:checked')].map(i => i.value);
+  const who = cloud.gid ? [...document.querySelectorAll('input[name=who]:checked')].map(i => i.value) : ['a'];
   if (!who.length) { toast('Tick at least one traveller'); return; }
   const ids = [];
   for (const p of form.photos) {
@@ -1145,10 +1140,12 @@ function renderPinSettings() {
   paintPreviews(setDlg);
 }
 $('#setBtn').onclick = () => {
-  $('#nameA').value = localState.names.a; $('#nameB').value = localState.names.b;
-  $('#namesBlock').hidden = !!cloud.gid;
-  $('#sharedNote').hidden = !cloud.gid;
-  if (cloud.gid) $('#sharedNote').textContent = `You're on the shared globe “${cloud.globes[cloud.gid] || 'Shared globe'}”. Pin settings below apply to everyone on it; names come from each person's Google account.`;
+  $('#nameA').value = localState.names.a;
+  $('#namesBlock').hidden = !!cloud.user;
+  $('#sharedNote').hidden = !cloud.user;
+  $('#sharedNote').textContent = cloud.gid
+    ? `You're on the shared globe “${cloud.globes[cloud.gid] || 'Shared globe'}”. Pin settings below apply to everyone on it.`
+    : 'Your name comes from your Google account.';
   renderPinSettings(); setDlg.showModal();
 };
 setDlg.addEventListener('click', e => {
@@ -1159,9 +1156,8 @@ setDlg.addEventListener('click', e => {
 });
 $('#pinShow').onchange = e => { state.pins.show = e.target.checked; savePins(); invalidate(); };
 setDlg.addEventListener('close', async () => {
-  if (!cloud.gid) {
+  if (!cloud.user) {
     localState.names.a = $('#nameA').value.trim() || 'Me';
-    localState.names.b = $('#nameB').value.trim() || 'Partner';
     await saveState();
   }
   refresh();
@@ -1416,14 +1412,13 @@ function cloudSaveCountry(name) {
   const fs = cloud.fb.fs, v = state.countries[name];
   fs.updateDoc(cdoc(), new fs.FieldPath('countries', name), v === undefined ? fs.deleteField() : v).catch(cloudErr);
 }
-async function copyLocalInto(map) {
+async function copyLocalInto() {
   const done = new Set(state.trips.filter(t => t.src && t.by === cloud.user.uid).map(t => t.src));
   const todo = localState.trips.filter(t => !done.has(t.id));
   if (!todo.length) { toast('Everything is already on this globe'); return; }
   toast(`Copying ${todo.length} trip${todo.length > 1 ? 's' : ''}…`);
   for (const t of todo) {
-    const who = [...new Set(whoIds(t).map(i => map[i]).filter(Boolean))];
-    if (!who.length) who.push(cloud.user.uid);
+    const who = [cloud.user.uid];
     const photos = [];
     for (const pid of t.photos || []) {
       const d = db ? await idb('photos', 'readonly', s => s.get(pid)) : memPhotos[pid];
@@ -1492,8 +1487,7 @@ function renderPeople(body, title) {
       ${list.map(p => `<div class="row">${avatar(p, isOnline(p))}<div class="nm"><b>${esc(p.name)}${p.me ? ' (you)' : ''}</b><small>${isOnline(p) ? 'Exploring the globe now' : p.lastActive ? 'Last seen ' + relTime(msOf(p.lastActive)) : 'Not seen yet'} · ${countriesOf(p.id)} ${countriesOf(p.id) === 1 ? 'country' : 'countries'}</small></div>${owner && !p.me ? `<button class="icon x" data-act="kick" data-id="${esc(p.id)}" title="Remove from this globe">✕</button>` : ''}</div>`).join('')}
       ${me ? `<h5>Your colour</h5><div class="sw">${PALETTE.map(c => `<button type="button" data-act="mycolor" data-c="${c}" class="${c === me.color ? 'on' : ''}" style="background:${c}" title="${people.some(p => !p.me && p.color === c) ? 'Taken' : ''}"></button>`).join('')}</div>` : ''}
       ${localState.trips.length ? `<h5>Bring your private globe here</h5>
-        <p class="sub">Copies the ${localState.trips.length} trips and photographs from this device onto “${esc(cloud.globes[cloud.gid] || 'this globe')}”.</p>
-        <div class="copyform">${['a', 'b'].map(k => `<span>${esc(localState.names[k])} is</span><select data-map="${k}"><option value="">nobody here</option>${people.map(p => `<option value="${esc(p.id)}" ${(k === 'a' && p.me) ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>`).join('')}</div>
+        <p class="sub">Adds the ${localState.trips.length} trips and photographs from this device to “${esc(cloud.globes[cloud.gid] || 'this globe')}” as yours. You can tick who else went on each trip afterwards.</p>
         <button class="btn" data-act="copylocal">Copy my private globe</button>` : ''}
       <div class="rule"></div>
       <button class="btn danger" data-act="leave">Leave this globe</button>
@@ -1523,11 +1517,7 @@ async function peopleAction(act, el) {
     useLocal(true); forgetGlobe(gid);
     fs.deleteDoc(ref).catch(cloudErr);
   }
-  else if (act === 'copylocal') {
-    const map = {};
-    document.querySelectorAll('[data-map]').forEach(s => map[s.dataset.map] = s.value);
-    copyLocalInto(map).catch(cloudErr);
-  }
+  else if (act === 'copylocal') copyLocalInto().catch(cloudErr);
 }
 
 /* ───────────── journey animation ───────────── */
