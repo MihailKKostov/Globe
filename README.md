@@ -24,7 +24,7 @@ Friends create an account with their email and a password, and share a globe: ev
 6. Project settings (⚙) → General → Your apps → **Web** (`</>`) → register an app (no Hosting needed) → copy the `firebaseConfig` values.
 7. Edit [`firebase-config.js`](firebase-config.js) on GitHub (pencil icon) and replace `null` with those values, then commit.
 
-Open the app, tap **Sign in** → **Create account**, then on the Friends page create a shared globe and invite people by email or link. You can copy your private globe onto a shared one from the same page.
+Open the app, tap **Sign in** → **Create account**. Every account has its own globe (“My globe”), saved in the account so it's the same on every device; trips you logged on a device before signing in can be moved into it. Shared globes are between the people on them. Tap the globe name under the title for an overview of all your globes, and use the Friends page to create a shared globe and invite people by email or link.
 
 Notes:
 - New accounts get an email to verify their address (check spam: it comes from `noreply@<your-project>.firebaseapp.com`). Invitations sent to an address only appear once that address is verified, so nobody can pick up an invitation meant for someone else.

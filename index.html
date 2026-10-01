@@ -207,6 +207,19 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
 .invrow{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px dotted var(--line);flex-wrap:wrap}
 .invrow .nm{flex:1;min-width:150px}
 .invrow small{display:block;color:var(--ink2);font-style:italic}
+#globeBtn{background:none;border:0;padding:0;margin-top:4px;font-family:var(--serif);font-style:italic;color:var(--wax);font-size:16px;text-align:left;white-space:nowrap}
+#globeBtn:hover{text-decoration:underline dotted;text-underline-offset:3px}
+.shelf{display:flex;flex-direction:column;gap:10px;margin:8px 0 14px}
+.gcard{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--line);border-radius:3px;background:rgba(255,250,235,.55);cursor:pointer;box-shadow:2px 3px 0 rgba(90,60,30,.08)}
+.gcard:hover{background:#fffaf0}
+.gcard.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.gcard canvas{position:static;width:76px;height:76px;flex:none;pointer-events:none}
+.gcard .nm{flex:1;min-width:0}
+.gcard .nm b{font-family:var(--serif);font-weight:400;font-size:20px;display:block;line-height:1.15}
+.gcard small{display:block;color:var(--ink2);font-style:italic}
+.gcard .here{font-style:italic;color:var(--wax);font-size:14px;align-self:flex-start}
+.stack{display:flex;margin:4px 0 2px}.stack .avw+.avw{margin-left:-7px}.stack .av{width:22px;height:22px;font-size:12px}
+.rowbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 #acctBtn .badge{margin-left:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--wax);color:#fbf4e2;font-size:12px;font-style:normal;display:inline-grid;place-items:center;line-height:1}
 
 @media (max-width:800px){
@@ -237,7 +250,7 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
 <canvas id="globe"></canvas>
 
 <header>
-  <div class="brand"><b>Our Scratch Globe</b><small>~ a ledger of our wanderings ~</small></div>
+  <div class="brand"><b>Our Scratch Globe</b><small id="tagline">~ a ledger of our wanderings ~</small><button id="globeBtn" hidden title="All your globes"></button></div>
   <div class="stats" id="stats"></div>
   <div class="spacer"></div>
   <button class="btn primary" id="addBtn">+ Add<span class="long"> a visit</span></button>
@@ -306,13 +319,15 @@ label{display:flex;flex-direction:column;gap:4px;color:var(--ink2);font-size:15p
     <div><div class="sub" style="margin-bottom:6px">Pin style</div><div class="pins" id="gPins" data-scope="global"></div></div>
     <div><div class="sub">Pin colour</div><div class="sw" id="gColors" data-scope="global"></div></div>
     <div class="sub">You can give any single country its own pin from that country's page.</div>
+    <div id="backupBlock">
     <div class="rule"></div>
-    <div class="sub">Your private globe is kept in this browser on this device. Export a backup now and then; it includes your photographs.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div class="sub">Without an account, your globe is kept in this browser on this device only. Export a backup now and then; it includes your photographs.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
       <button type="button" class="btn" id="expBtn">Export backup</button>
       <button type="button" class="btn" id="impBtn">Import backup</button>
       <button type="button" class="btn danger" id="wipeBtn">Erase everything</button>
       <input type="file" id="impFile" accept="application/json" hidden>
+    </div>
     </div>
     <div class="actions"><button class="btn primary" value="ok">Done</button></div>
   </form>
@@ -637,8 +652,11 @@ function drawBg() {
   v.addColorStop(0, 'rgba(120,75,30,0)'); v.addColorStop(.75, 'rgba(120,75,30,.22)'); v.addColorStop(1, 'rgba(70,40,15,.6)');
   g.fillStyle = v; g.fillRect(0, 0, W, H);
 }
+let headerBottom = 0;
+const measureHeader = () => { headerBottom = document.querySelector('header').getBoundingClientRect().bottom; };
 function resize() {
   W = innerWidth; H = innerHeight;
+  measureHeader();
   dpr = Math.min(window.devicePixelRatio || 1, W <= 800 ? 1.75 : 2);
   gc.width = W * dpr; gc.height = H * dpr;
   drawBg();
@@ -650,7 +668,7 @@ if (document.fonts) document.fonts.ready.then(() => { if (W) drawBg(); });
 
 function targetView() {
   const mobile = W <= 800;
-  let left = 0, right = W, top = mobile ? 86 : 74, bottom = H;
+  let left = 0, right = W, top = Math.max(mobile ? 86 : 74, headerBottom + 8), bottom = H;
   if (mobile) bottom -= 62;
   if (panelOpen) { if (mobile) bottom -= H * .54 + 4; else right -= 430; }
   if (J.active) bottom -= mobile ? 150 : 70;
@@ -981,6 +999,8 @@ function renderPanel() {
     renderList();
   } else if (mode === 'people') {
     renderPeople(body, title);
+  } else if (mode === 'globes') {
+    renderGlobes(body, title);
   } else {
     title.textContent = 'Timeline';
     const ts = sortedTrips();
@@ -1041,7 +1061,7 @@ async function deleteTrip(id) {
   await removeTrip(id); refresh();
 }
 function refresh() {
-  computePeople(); updateStats(); updateLegend(); updateAcct();
+  computePeople(); updateStats(); updateLegend(); updateAcct(); updateGlobeBtn();
   if (panelOpen) {
     const ae = document.activeElement;   // don't yank the keyboard away while someone is typing
     if (ae && ae.id === 'q') renderList();
@@ -1057,7 +1077,7 @@ function updateStats() {
 }
 function updateLegend() {
   $('#legend').innerHTML = people.slice(0, 6).map(p => `<span><i style="background:${p.color}"></i>${esc(p.name)}</span>`).join('') +
-    (cloud.gid ? `<span><i style="background:${TOGETHER}"></i>Together</span>` : '') + `<span><i style="background:#efe0bb"></i>Uncharted</span>`;
+    (people.length > 1 ? `<span><i style="background:${TOGETHER}"></i>Together</span>` : '') + `<span><i style="background:#efe0bb"></i>Uncharted</span>`;
 }
 
 /* ───────────── add / edit dialog ───────────── */
@@ -1073,8 +1093,9 @@ function openTripDlg({id, country} = {}) {
   $('#fStart').value = t ? t.start : new Date().toISOString().slice(0, 10);
   $('#fEnd').value = t ? t.end || '' : '';
   $('#fNote').value = t ? t.note || '' : '';
-  $('#whoField').hidden = !cloud.gid;
+  $('#whoField').hidden = people.length < 2;     // only you on this globe: nothing to choose
   const chosen = new Set(t ? whoIds(t) : (cloud.gid ? [cloud.user.uid] : ['a']));
+  form.who = [...chosen];
   const ids = [...new Set([...people.map(p => p.id), ...chosen])];
   $('#fWho').innerHTML = ids.map(i => `<label><input type="checkbox" name="who" value="${esc(i)}" ${chosen.has(i) ? 'checked' : ''}><i class="dot" style="background:${colorOf(i)}"></i>${esc(nameOf(i))}${cloud.gid && person(i) && person(i).me ? ' (you)' : ''}</label>`).join('');
   renderPThumbs();
@@ -1110,7 +1131,7 @@ $('#tripForm').addEventListener('submit', async e => {
   const country = $('#fCountry').value, start = $('#fStart').value, end = $('#fEnd').value;
   if (!country || !start) return;
   if (end && end < start) { toast('The “To” date is before the “From” date'); return; }
-  const who = cloud.gid ? [...document.querySelectorAll('input[name=who]:checked')].map(i => i.value) : ['a'];
+  const who = $('#whoField').hidden ? form.who : [...document.querySelectorAll('input[name=who]:checked')].map(i => i.value);
   if (!who.length) { toast('Tick at least one traveller'); return; }
   const ids = [];
   for (const p of form.photos) {
@@ -1155,10 +1176,11 @@ function renderPinSettings() {
 $('#setBtn').onclick = () => {
   $('#nameA').value = localState.names.a;
   $('#namesBlock').hidden = !!cloud.user;
+  $('#backupBlock').hidden = !!cloud.user;
   $('#sharedNote').hidden = !cloud.user;
-  $('#sharedNote').textContent = cloud.gid
-    ? `You're on the shared globe “${cloud.globes[cloud.gid] || 'Shared globe'}”. Pin settings below apply to everyone on it.`
-    : 'Your name comes from your account; change it on the Friends page.';
+  $('#sharedNote').textContent = !cloud.gid ? 'Your name comes from your account; change it on the Friends page.'
+    : isPersonal(cloud.gid) ? 'These settings apply to My globe, which is saved in your account.'
+    : `You're on the shared globe “${globeName(cloud.gid)}”. Pin settings below apply to everyone on it.`;
   renderPinSettings(); setDlg.showModal();
 };
 setDlg.addEventListener('click', e => {
@@ -1246,11 +1268,17 @@ async function startCloud() {
       ls.set('sg-auth', '1');
       await loadMyGlobes();
       watchInvites();
+      await ensureOwnGlobe();
       const pending = ls.get('sg-join');
       if (pending) { ls.del('sg-join'); await joinGlobe(pending); }
-      else { const g = ls.get('sg-active'); if (g && cloud.globes[g] && cloud.gid !== g) openGlobe(g); }
+      else {
+        const g = ls.get('sg-active');
+        const target = g && (cloud.globes[g] || g === cloud.ownGid) ? g : cloud.ownGid;
+        if (cloud.gid !== target) openGlobe(target);
+      }
     } else {
-      ls.del('sg-auth'); cloud.globes = {}; cloud.pendingName = ''; authTab = 'signin';
+      ls.del('sg-auth'); cloud.globes = {}; cloud.pendingName = ''; cloud.ownGid = null; authTab = 'signin'; moveAsked = false;
+      for (const k in summaries) delete summaries[k];
       watchInvites();
       if (cloud.gid) useLocal(false);
     }
@@ -1345,6 +1373,33 @@ const inviteMail = inv => {
   return `mailto:${encodeURIComponent(inv.email)}?subject=${encodeURIComponent('Join ' + inv.globeName + ' on Our Scratch Globe')}&body=${encodeURIComponent(body)}`;
 };
 
+/* every account has its own globe, "u_<uid>": same structure as a shared globe, but only its owner may join */
+const isPersonal = gid => !!gid && gid.startsWith('u_');
+const globeName = gid => gid === cloud.ownGid ? 'My globe' : (cloud.globes[gid] || 'Shared globe');
+async function ensureOwnGlobe() {
+  const {fs, fdb} = cloud.fb, u = cloud.user, gid = 'u_' + u.uid;
+  cloud.ownGid = gid;
+  try {
+    const m = await fs.getDoc(fs.doc(fdb, 'globes', gid, 'members', u.uid));
+    if (m.exists()) return;
+    await fs.setDoc(fs.doc(fdb, 'globes', gid), {name:'My globe', owner:u.uid, personal:true, created:fs.serverTimestamp(), pins:localState.pins, countries:localState.countries});
+    await addMeAsMember(gid);
+  } catch (e) { console.error(e); }
+}
+// trips saved on this device before signing in can move into the account's own globe (asked once per account)
+let moveAsked = false;
+function maybeMoveDeviceTrips() {
+  if (moveAsked || !cloud.user) return;
+  moveAsked = true;
+  const key = 'sg-moved-' + cloud.user.uid, n = localState.trips.length;
+  if (ls.get(key) || !n) return;
+  setTimeout(() => {
+    if (cloud.gid !== cloud.ownGid) { moveAsked = false; return; }
+    if (confirm(`This device has ${n} trip${n > 1 ? 's' : ''} saved before you signed in. Move ${n > 1 ? 'them' : 'it'} into your account's globe, so ${n > 1 ? 'they are' : 'it is'} on every device you sign in on?`))
+      copyLocalInto().then(() => ls.set(key, 'moved')).catch(cloudErr);
+    else ls.set(key, 'declined');
+  }, 700);
+}
 async function loadMyGlobes() {
   const {fs, fdb} = cloud.fb;
   try { const d = await fs.getDoc(fs.doc(fdb, 'users', cloud.user.uid)); cloud.globes = (d.exists() && d.data().globes) || {}; }
@@ -1377,6 +1432,7 @@ function addMeAsMember(gid) {
 }
 async function joinGlobe(gid) {
   const {fs, fdb} = cloud.fb;
+  if (isPersonal(gid)) { if (gid === cloud.ownGid) openGlobe(gid); else toast('That invitation link is not valid'); return; }
   try {
     const g = await fs.getDoc(fs.doc(fdb, 'globes', gid));
     if (!g.exists()) { toast('That invitation link is not valid any more'); return; }
@@ -1393,15 +1449,16 @@ function openGlobe(gid) {
   stopListeners();
   const {fs, fdb} = cloud.fb;
   if (J.active) exitJourney();
-  cloud.gid = gid; cloud.globe = {name:cloud.globes[gid]}; cloud.members = []; cloud.globeInvites = []; cloudThumbs = {};
+  cloud.gid = gid; cloud.globe = {name:globeName(gid)}; cloud.members = []; cloud.globeInvites = []; cloudThumbs = {};
   state = {names:defaults().names, trips:[], pins:defaults().pins, countries:{}};
   ls.set('sg-active', gid);
   const opts = {serverTimestamps:'estimate'};
   const fail = e => {
     console.error(e);
     if (cloud.gid !== gid) return;
+    if (isPersonal(gid)) { toast('Could not open your globe: ' + (e.code || e.message)); return; }
     toast('You no longer have access to that globe');
-    forgetGlobe(gid); useLocal(true);
+    forgetGlobe(gid); openGlobe(cloud.ownGid);
   };
   cloud.unsub.push(
     fs.onSnapshot(fs.doc(fdb, 'globes', gid), d => {
@@ -1410,7 +1467,7 @@ function openGlobe(gid) {
       cloud.globe = g;
       state.pins = {...defaults().pins, ...(g.pins || {})};
       state.countries = g.countries || {};
-      if (g.name && cloud.globes[gid] !== g.name) rememberGlobe(gid, g.name);
+      if (g.name && !isPersonal(gid) && cloud.globes[gid] !== g.name) rememberGlobe(gid, g.name);
       scheduleRefresh();
     }, fail),
     fs.onSnapshot(fs.collection(fdb, 'globes', gid, 'members'), q => {
@@ -1422,6 +1479,7 @@ function openGlobe(gid) {
     }, e => console.error(e)),
     fs.onSnapshot(fs.collection(fdb, 'globes', gid, 'trips'), q => {
       state.trips = q.docs.map(d => ({...d.data(), id:d.id})); scheduleRefresh();
+      if (gid === cloud.ownGid) maybeMoveDeviceTrips();
     }, fail),
     fs.onSnapshot(fs.collection(fdb, 'globes', gid, 'photos'), q => {
       for (const c of q.docChanges()) { if (c.type === 'removed') delete cloudThumbs[c.doc.id]; else cloudThumbs[c.doc.id] = c.doc.data().thumb; }
@@ -1512,7 +1570,7 @@ function cloudSaveCountry(name) {
 async function copyLocalInto() {
   const done = new Set(state.trips.filter(t => t.src && t.by === cloud.user.uid).map(t => t.src));
   const todo = localState.trips.filter(t => !done.has(t.id));
-  if (!todo.length) { toast('Everything is already on this globe'); return; }
+  if (!todo.length) return;
   toast(`Copying ${todo.length} trip${todo.length > 1 ? 's' : ''}…`);
   for (const t of todo) {
     const who = [cloud.user.uid];
@@ -1524,8 +1582,95 @@ async function copyLocalInto() {
     }
     cloudPutTrip({id:uid(), created:t.created || Date.now(), country:t.country, place:t.place || '', start:t.start, end:t.end || '', note:t.note || '', who, photos, by:cloud.user.uid, src:t.id});
   }
-  toast('Your private globe has been copied here');
+  toast(`Moved ${todo.length} trip${todo.length > 1 ? 's' : ''} into your globe`);
 }
+
+/* overview: every globe you are part of, each as a little globe on a shelf */
+const summaries = {};   // gid -> {trips, colors: Map(country -> colour), members, last} | {error}
+function summarize(trips, members) {
+  const colour = id => (members.find(m => m.id === id) || {}).color || '#8a7155';
+  const byCountry = new Map();
+  for (const t of trips) {
+    if (!byCountry.has(t.country)) byCountry.set(t.country, new Set());
+    for (const w of (Array.isArray(t.who) ? t.who : [t.who])) byCountry.get(t.country).add(w);
+  }
+  const colors = new Map([...byCountry].map(([c, w]) => [c, w.size > 1 ? TOGETHER : colour([...w][0])]));
+  const last = trips.reduce((a, t) => !a || t.start > a.start ? t : a, null);
+  return {trips:trips.length, colors, members, last};
+}
+async function loadSummaries() {
+  const {fs, fdb} = cloud.fb;
+  await Promise.all([cloud.ownGid, ...Object.keys(cloud.globes)].filter(g => g && g !== cloud.gid).map(async g => {
+    try {
+      const [t, m] = await Promise.all([fs.getDocs(fs.collection(fdb, 'globes', g, 'trips')), fs.getDocs(fs.collection(fdb, 'globes', g, 'members'))]);
+      summaries[g] = summarize(t.docs.map(d => d.data()), m.docs.map(d => ({id:d.id, ...d.data()})));
+    } catch (e) { console.error(e); summaries[g] = {error:true}; }
+  }));
+  if (panelOpen && mode === 'globes') renderPanel();
+}
+function openOverview() {
+  if (J.active) exitJourney();
+  setMode('globes');
+  if (cloud.user) loadSummaries();
+}
+function drawMini(c, colors) {
+  const S = 76, d = 2;
+  c.width = c.height = S * d;
+  const g = c.getContext('2d'); g.scale(d, d);
+  const pts = [...colors.keys()].map(n => centroid.get(n)).filter(Boolean);
+  const ctr = pts.length ? d3.geoCentroid({type:'MultiPoint', coordinates:pts}) : [15, 25];
+  const pr = d3.geoOrthographic().scale(S / 2 - 4).translate([S / 2, S / 2]).rotate([-ctr[0], -clamp(ctr[1], -40, 40), AXIS_TILT / 2]).clipAngle(90).precision(1);
+  const pa = d3.geoPath(pr, g);
+  let gr = g.createRadialGradient(S * .35, S * .3, 2, S / 2, S / 2, S / 2);
+  gr.addColorStop(0, '#d5dcc0'); gr.addColorStop(1, '#6f8273');
+  g.fillStyle = gr; g.beginPath(); pa({type:'Sphere'}); g.fill();
+  g.beginPath(); for (const f of featsLo) if (!colors.has(f.name)) pa(f.geo);
+  g.fillStyle = '#efe0bb'; g.fill(); g.strokeStyle = 'rgba(70,45,20,.5)'; g.lineWidth = .4; g.stroke();
+  for (const f of featsLo) { const col = colors.get(f.name); if (!col) continue; g.beginPath(); pa(f.geo); g.fillStyle = col; g.fill(); }
+  // small countries vanish at this size: mark every visited one with a dot too
+  for (const [name, col] of colors) {
+    const c = centroid.get(name); if (!c || d3.geoDistance(c, [ctr[0], clamp(ctr[1], -40, 40)]) > Math.PI / 2 - .1) continue;
+    const [x, y] = pr(c);
+    g.fillStyle = col; g.strokeStyle = '#fbf4e2'; g.lineWidth = 1;
+    g.beginPath(); g.arc(x, y, 3, 0, 7); g.fill(); g.stroke();
+  }
+  gr = g.createRadialGradient(S * .35, S * .3, 2, S / 2, S / 2, S / 2);
+  gr.addColorStop(0, 'rgba(255,248,220,.3)'); gr.addColorStop(.8, 'rgba(110,70,25,.15)'); gr.addColorStop(1, 'rgba(60,35,10,.5)');
+  g.fillStyle = gr; g.beginPath(); pa({type:'Sphere'}); g.fill();
+  g.strokeStyle = '#b08d3c'; g.lineWidth = 2.5; g.beginPath(); g.arc(S / 2, S / 2, S / 2 - 2.5, 0, 7); g.stroke();
+}
+const fmtMonth = s => { const [y, m] = s.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleDateString(undefined, {month:'short', year:'numeric'}); };
+const invitationsHtml = () => (cloud.invites || []).length ? `<div class="globes"><h5>Invitations</h5>${cloud.invites.map(i => `<div class="invrow"><div class="nm"><b>${esc(i.globeName)}</b><small>from ${esc(i.fromName || 'a friend')}</small></div><button class="btn small primary" data-act="accept" data-id="${esc(i.id)}">Join</button><button class="btn small" data-act="decline" data-id="${esc(i.id)}">Decline</button></div>`).join('')}</div>` : '';
+function renderGlobes(body, title) {
+  title.textContent = 'Your globes';
+  if (!cloud.user) {
+    body.innerHTML = `<div class="empty">Sign in to keep your globe in your account, on every device, and to share globes with friends.<br><br><button class="btn primary" data-act="gosignin">Sign in</button></div>`;
+    return;
+  }
+  if (cloud.gid) summaries[cloud.gid] = summarize(state.trips, cloud.members);
+  const shared = Object.keys(cloud.globes).sort((a, b) => cloud.globes[a].localeCompare(cloud.globes[b]));
+  const card = g => {
+    const s = summaries[g], own = g === cloud.ownGid, open = cloud.gid === g;
+    if (s && s.error) return `<div class="gcard"><canvas></canvas><div class="nm"><b>${esc(globeName(g))}</b><small>You no longer have access to this globe.</small></div><button class="btn small" data-act="forget" data-g="${esc(g)}">Remove</button></div>`;
+    const who = !s ? '' : own ? '<small>Only you</small>'
+      : `<div class="stack">${s.members.slice(0, 5).map(m => avatar({name:m.name, color:m.color || '#8a7155'})).join('')}</div><small>${s.members.length} traveller${s.members.length === 1 ? '' : 's'}</small>`;
+    const nums = !s ? '<small>Unrolling…</small>' : `<small>${s.colors.size} ${s.colors.size === 1 ? 'country' : 'countries'} · ${s.trips} trip${s.trips === 1 ? '' : 's'}</small>${s.last ? `<small>Latest: ${esc(s.last.country)}, ${fmtMonth(s.last.start)}</small>` : ''}`;
+    return `<div class="gcard ${open ? 'on' : ''}" data-act="useglobe" data-g="${esc(g)}"><canvas data-mini="${esc(g)}"></canvas><div class="nm"><b>${esc(globeName(g))}</b>${who}${nums}</div>${open ? '<span class="here">open</span>' : ''}</div>`;
+  };
+  body.innerHTML = invitationsHtml() +
+    `<div class="globes"><h5>Your own</h5></div><div class="shelf">${card(cloud.ownGid)}</div>
+     <div class="globes"><h5>Shared with others</h5></div>
+     ${shared.length ? `<div class="shelf">${shared.map(card).join('')}</div>` : '<p class="sub">None yet. Create one and invite friends, family or your partner.</p>'}
+     <button class="btn" data-act="newglobe">+ New shared globe</button>`;
+  body.querySelectorAll('canvas[data-mini]').forEach(c => { const s = summaries[c.dataset.mini]; drawMini(c, s && s.colors ? s.colors : new Map()); });
+}
+function updateGlobeBtn() {
+  const b = $('#globeBtn'), on = !!(cloud.user && cloud.gid);
+  b.hidden = !on; $('#tagline').hidden = on;
+  if (on) b.textContent = `~ ${globeName(cloud.gid)} ▾ ~`;
+  measureHeader();
+}
+$('#globeBtn').onclick = () => { if (panelOpen && mode === 'globes') closePanel(); else openOverview(); };
 
 /* friends page */
 const PEOPLE_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="3.3"/><circle cx="16.5" cy="9" r="2.8"/><path d="M1.5 19.5c0-3.4 2.9-5.8 6.5-5.8s6.5 2.4 6.5 5.8z"/><path d="M14.6 19.5c0-2.4-.9-4.3-2.4-5.5 1.3-.6 2.7-.8 4.3-.8 3.2 0 6 2.1 6 5.2v1.1z"/></svg>';
@@ -1552,7 +1697,7 @@ function updateAcct() {
   b.title = `${people.length} on this globe, ${on.length} exploring now`;
 }
 function renderPeople(body, title) {
-  title.textContent = cloud.gid ? (cloud.globes[cloud.gid] || 'Shared globe') : 'Friends';
+  title.textContent = cloud.gid && !isPersonal(cloud.gid) ? globeName(cloud.gid) : 'Friends';
   if (!CFG) {
     body.innerHTML = `<div class="hero"><p>Shared globes let friends sign in and scratch off their travels on one globe together.</p><p class="sub">This needs a one-time setup of a free Firebase project. The steps are in the README.</p></div>`;
     return;
@@ -1569,20 +1714,18 @@ function renderPeople(body, title) {
         <button class="btn primary" type="submit">${up ? 'Create account' : 'Sign in'}</button>
         ${up ? '' : '<button type="button" class="linkbtn" data-act="reset">Forgot your password?</button>'}
       </form>
-      <p class="sub" style="margin-top:16px">Your private globe stays on this device. Nothing is shared until you choose to.</p>`;
+      <p class="sub" style="margin-top:16px">With an account, your globe is kept safe in your account and is on every device you sign in on. Nothing is shared with anyone until you choose to.</p>`;
     return;
   }
   const u = cloud.user, gids = Object.keys(cloud.globes);
   let h = `<div class="me-row">${avatar({name:myName(), color:'#6b5236'})}<div class="nm"><b>${esc(myName())}</b><small>${esc(u.email || '')}</small></div><button class="btn small" data-act="rename">Edit name</button><button class="btn small" data-act="signout">Sign out</button></div>
     ${u.emailVerified ? '' : `<div class="notice">Please verify your email: we sent a link to <b>${esc(u.email)}</b>. Invitations from friends show up here once it is verified.
       <div class="acts"><button class="btn small" data-act="verified">I've verified it</button><button class="btn small" data-act="resend">Send the link again</button></div></div>`}
-    ${(cloud.invites || []).length ? `<div class="globes"><h5>Invitations</h5>${cloud.invites.map(i => `<div class="invrow"><div class="nm"><b>${esc(i.globeName)}</b><small>from ${esc(i.fromName || 'a friend')}</small></div><button class="btn small primary" data-act="accept" data-id="${esc(i.id)}">Join</button><button class="btn small" data-act="decline" data-id="${esc(i.id)}">Decline</button></div>`).join('')}</div>` : ''}
-    <div class="globes"><h5>Your globes</h5>
-      <div class="row ${cloud.gid ? '' : 'on'}" data-act="useglobe" data-g=""><div class="nm"><b>Private globe</b><small>only on this device</small></div></div>
-      ${gids.map(g => `<div class="row ${cloud.gid === g ? 'on' : ''}" data-act="useglobe" data-g="${esc(g)}"><div class="nm"><b>${esc(cloud.globes[g])}</b><small>shared</small></div></div>`).join('')}
-      <button class="btn" style="margin-top:10px" data-act="newglobe">+ New shared globe</button>
-    </div>`;
-  if (cloud.gid) {
+    ${invitationsHtml()}
+    <div class="rowbtns"><button class="btn" data-act="overview">All your globes (${gids.length + 1})</button><button class="btn" data-act="newglobe">+ New shared globe</button></div>`;
+  if (cloud.gid && isPersonal(cloud.gid)) {
+    h += `<div class="rule"></div><p class="sub">You're on <b>My globe</b>. It's yours alone and follows your account to every device. To travel with friends, family or a partner, create a shared globe and invite them; each person keeps their own globe too.</p>`;
+  } else if (cloud.gid) {
     const link = location.origin + location.pathname + '?join=' + cloud.gid;
     const countriesOf = id => new Set(state.trips.filter(t => whoIds(t).includes(id)).map(t => t.country)).size;
     const list = [...people].sort((a, b) => (isOnline(b) - isOnline(a)) || msOf(b.lastActive) - msOf(a.lastActive));
@@ -1599,9 +1742,6 @@ function renderPeople(body, title) {
       <h5>Travellers on this globe · ${list.filter(isOnline).length} exploring now</h5>
       ${list.map(p => `<div class="row">${avatar(p, isOnline(p))}<div class="nm"><b>${esc(p.name)}${p.me ? ' (you)' : ''}</b><small>${isOnline(p) ? 'Exploring the globe now' : p.lastActive ? 'Last seen ' + relTime(msOf(p.lastActive)) : 'Not seen yet'} · ${countriesOf(p.id)} ${countriesOf(p.id) === 1 ? 'country' : 'countries'}</small></div>${owner && !p.me ? `<button class="icon x" data-act="kick" data-id="${esc(p.id)}" title="Remove from this globe">✕</button>` : ''}</div>`).join('')}
       ${me ? `<h5>Your colour</h5><div class="sw">${PALETTE.map(c => `<button type="button" data-act="mycolor" data-c="${c}" class="${c === me.color ? 'on' : ''}" style="background:${c}" title="${people.some(p => !p.me && p.color === c) ? 'Taken' : ''}"></button>`).join('')}</div>` : ''}
-      ${localState.trips.length ? `<h5>Bring your private globe here</h5>
-        <p class="sub">Adds the ${localState.trips.length} trips and photographs from this device to “${esc(cloud.globes[cloud.gid] || 'this globe')}” as yours. You can tick who else went on each trip afterwards.</p>
-        <button class="btn" data-act="copylocal">Copy my private globe</button>` : ''}
       <div class="rule"></div>
       <button class="btn danger" data-act="leave">Leave this globe</button>
     </div>`;
@@ -1621,8 +1761,11 @@ async function peopleAction(act, el) {
   else if (act === 'accept') { const inv = cloud.invites.find(i => i.id === el.dataset.id); if (inv) acceptInvite(inv); }
   else if (act === 'decline') fs.deleteDoc(fs.doc(fdb, 'invites', el.dataset.id)).catch(cloudErr);
   else if (act === 'uninvite') fs.deleteDoc(fs.doc(fdb, 'invites', el.dataset.id)).catch(cloudErr);
-  else if (act === 'signout') { if (confirm('Sign out? Your private globe stays on this device.')) await signOutCloud(); }
-  else if (act === 'useglobe') { if (el.dataset.g) openGlobe(el.dataset.g); else useLocal(true); }
+  else if (act === 'signout') { if (confirm('Sign out? Your globes stay safe in your account.')) await signOutCloud(); }
+  else if (act === 'useglobe') { const g = el.dataset.g; if (g !== cloud.gid) openGlobe(g); if (mode === 'globes') closePanel(); }
+  else if (act === 'overview') openOverview();
+  else if (act === 'gosignin') setMode('people');
+  else if (act === 'forget') { forgetGlobe(el.dataset.g); delete summaries[el.dataset.g]; renderPanel(); }
   else if (act === 'newglobe') {
     const name = (prompt('Name your shared globe', 'Our adventures') || '').trim();
     if (name) { try { await createGlobe(name.slice(0, 60)); toast(`“${name}” created. Now invite your friends!`); } catch (e) { cloudErr(e); } }
@@ -1638,10 +1781,10 @@ async function peopleAction(act, el) {
     const gid = cloud.gid;
     if (!confirm(`Leave “${cloud.globes[gid]}”? Your trips stay on it for the others.`)) return;
     const {fs, fdb} = cloud.fb, ref = fs.doc(fdb, 'globes', gid, 'members', cloud.user.uid);
-    useLocal(true); forgetGlobe(gid);
+    forgetGlobe(gid); openGlobe(cloud.ownGid);
     fs.deleteDoc(ref).catch(cloudErr);
   }
-  else if (act === 'copylocal') copyLocalInto().catch(cloudErr);
+
 }
 
 /* ───────────── journey animation ───────────── */

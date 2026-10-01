@@ -15,17 +15,21 @@ service cloud.firestore {
     }
 
     match /globes/{gid} {
-      // the globe id is the invitation: anyone signed in who has the link can see its name and join
-      allow get: if signedIn();
+      // "u_<uid>" is that person's own globe: nobody else can create it, read it or join it
+      function personalOk(uid) { return !gid.matches('u_.*') || gid == 'u_' + uid; }
+
+      // for shared globes the id is the invitation: anyone signed in who has the link can see its name and join
+      allow get: if signedIn() && personalOk(request.auth.uid);
       allow list: if false;
-      allow create: if signedIn() && request.resource.data.owner == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.owner == request.auth.uid && personalOk(request.auth.uid);
       allow update: if isMember(gid) && request.resource.data.owner == resource.data.owner;
       allow delete: if isOwner(gid);
 
       match /members/{uid} {
         allow get: if isMember(gid) || (signedIn() && request.auth.uid == uid);
         allow list: if isMember(gid);
-        allow create, update: if signedIn() && request.auth.uid == uid;
+        allow create: if signedIn() && request.auth.uid == uid && personalOk(uid);
+        allow update: if signedIn() && request.auth.uid == uid;
         allow delete: if signedIn() && (request.auth.uid == uid || isOwner(gid));
       }
       match /trips/{id} { allow read, write: if isMember(gid); }
@@ -42,6 +46,7 @@ service cloud.firestore {
       }
       allow read, delete: if isInvitee() || isMember(resource.data.gid);
       allow create: if isMember(request.resource.data.gid)
+        && !request.resource.data.gid.matches('u_.*')
         && request.resource.data.from == request.auth.uid
         && request.resource.data.email == request.resource.data.email.lower()
         && id == request.resource.data.gid + '_' + request.resource.data.email;
